@@ -1,0 +1,50 @@
+"use client"
+
+import { Calendar, Home, CalendarPlus } from "lucide-react"
+import {
+    SidebarGroup,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from "@/components/ui/sidebar"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
+
+export function NavMain() {
+    const items = [
+        {
+            title: "Home",
+            url: "/",
+            icon: Home,
+        },
+        {
+            title: "Events",
+            url: "/events",
+            icon: Calendar,
+        },
+        {
+            title: "Create Event",
+            url: "/events/new",
+            icon: CalendarPlus,
+        },
+
+    ]
+
+    const pathname = usePathname()
+    return (
+        <SidebarGroup>
+            <SidebarMenu>
+                {items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={pathname === item.url}>
+                            <Link href={item.url}>
+                                <item.icon />
+                                <span>{item.title}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
+    )
+}

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context";
+import "../globals.css";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -9,23 +8,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-    title: "Buzz Dashboard",
-    description: "Buzz Dashboard",
+    title: "Authentication - Buzz Dashboard",
+    description: "Authentication for Buzz Dashboard",
 };
 
-export default function RootLayout({
+export default function AuthLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
         <html lang="en" className="dark">
-            <head />
             <body className={`${inter.variable} antialiased bg-[#0f0f0f] text-white`}>
-                <AuthProvider>
-                    {children}
-                </AuthProvider>
+                {children}
             </body>
         </html>
     );
-}
+} 
