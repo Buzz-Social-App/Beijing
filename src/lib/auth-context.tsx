@@ -1,22 +1,16 @@
 'use client';
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-    User,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    sendPasswordResetEmail
-} from 'firebase/auth';
-import { auth } from './firebase';
+import { User, AuthError, AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    signUp: (email: string, password: string) => Promise<void>;
-    signIn: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string, username: string) => Promise<{ user: User | null; error: AuthError | null }>;
+    signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>;
     logOut: () => Promise<void>;
-    resetPassword: (email: string) => Promise<void>;
+    resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+    deleteUser: (userId: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,28 +20,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
+        // Get initial session
+        const getInitialSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
             setLoading(false);
-        });
+        };
 
-        return () => unsubscribe();
+        getInitialSession();
+
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (_event: AuthChangeEvent, session: Session | null) => {
+                setUser(session?.user ?? null);
+                setLoading(false);
+            }
+        );
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
-    const signUp = async (email: string, password: string) => {
-        await createUserWithEmailAndPassword(auth, email, password);
+    const signUp = async (email: string, password: string, username: string) => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username: username
+                }
+            }
+        });
+        return { user: data.user, error };
     };
 
     const signIn = async (email: string, password: string) => {
-        await signInWithEmailAndPassword(auth, email, password);
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        return { user: data.user, error };
     };
 
     const logOut = async () => {
-        await signOut(auth);
+        await supabase.auth.signOut();
+    };
+
+    const deleteUser = async (userId: string) => {
+        const { error } = await supabase.auth.admin.deleteUser(userId);
+        return { error };
     };
 
     const resetPassword = async (email: string) => {
-        await sendPasswordResetEmail(auth, email);
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password-confirm`,
+        });
+        return { error };
     };
 
     const value = {
@@ -57,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         logOut,
         resetPassword,
+        deleteUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

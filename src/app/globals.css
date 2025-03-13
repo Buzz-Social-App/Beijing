@@ -109,6 +109,6 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[var(--color-neutral-950)] text-white;
   }
 }

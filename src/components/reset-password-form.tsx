@@ -27,7 +27,12 @@ export function ResetPasswordForm({
         setLoading(true);
 
         try {
-            await resetPassword(email);
+            const { error } = await resetPassword(email);
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
             setMessage("Check your email for further instructions");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to reset password";

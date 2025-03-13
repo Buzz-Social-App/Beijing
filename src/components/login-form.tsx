@@ -30,7 +30,12 @@ export function LoginForm({
         setLoading(true);
 
         try {
-            await signIn(email, password);
+            const { error } = await signIn(email, password);
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
             router.push("/");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to sign in";
