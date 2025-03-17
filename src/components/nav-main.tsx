@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, CalendarPlus } from "lucide-react"
+import { Calendar, Home, CalendarPlus, Tag, Building2 } from "lucide-react"
 import {
     SidebarGroup,
     SidebarMenu,
@@ -26,6 +26,16 @@ export function NavMain() {
             title: "Create Event",
             url: "/events/new",
             icon: CalendarPlus,
+        },
+        {
+            title: "Tags",
+            url: "/tags",
+            icon: Tag,
+        },
+        {
+            title: "Cities",
+            url: "/cities",
+            icon: Building2,
         },
 
     ]

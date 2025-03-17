@@ -51,11 +51,9 @@ export default function DashboardLayout({
                         <SidebarTrigger className="-ml-1" />
                     </div>
                 </header>
-                <body className={`antialiased`}>
-                    <main>
-                        {children}
-                    </main>
-                </body>
+                <main className={`antialiased`}>
+                    {children}
+                </main>
             </SidebarInset>
         </SidebarProvider>
     );
