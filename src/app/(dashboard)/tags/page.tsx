@@ -15,6 +15,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Tag } from '@/components/ui/tag';
+import { IconName } from '@/components/ui/dynamic-icon';
 
 // Define the Tag type based on the schema
 type Tag = {
@@ -149,15 +151,7 @@ export default function TagsPage() {
                                     Preview of how the icon will appear
                                 </p>
                                 {newTag.title && (
-                                    <div className="flex flex-col w-full items-center justify-center my-4">
-                                        <div
-                                            key={newTag.title}
-                                            className="bg-neutral-800 rounded-2xl aspect-square flex flex-col w-fit items-center justify-center text-center p-2 space-y-1"
-                                        >
-                                            {largeIconMap[newTag.icon] || <Flame className="h-8 w-8 text-neutral-100" />}
-                                            <span className="text-neutral-100 text-xs font-normal">{newTag.title}</span>
-                                        </div>
-                                    </div>
+                                    <Tag title={newTag.title} icon={newTag.icon as IconName} />
                                 )}
                             </div>
 
