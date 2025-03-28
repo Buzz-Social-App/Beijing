@@ -18,7 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { FilterIcon, SearchIcon, Loader2, ChevronLeft, ChevronRight, CheckIcon } from "lucide-react"
+import { FilterIcon, SearchIcon, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { format } from "date-fns"
 import Link from "next/link"
