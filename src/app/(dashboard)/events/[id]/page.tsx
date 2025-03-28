@@ -10,35 +10,14 @@ import { GoogleMap, Marker } from '@react-google-maps/api';
 import { isGoogleMapsLoaded } from "@/lib/google-maps";
 import { format, parse } from "date-fns";
 import Image from "next/image";
-
+import { Event } from "@/lib/types";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 // Google Maps container styles
 const mapContainerStyle = {
     width: '100%',
     height: '300px',
     borderRadius: '0.5rem',
-};
-
-// Event type
-type Event = {
-    id: string;
-    name: string;
-    host_id: string;
-    created_at: string;
-    location: string | null;
-    city: string;
-    description: string;
-    date: string;
-    start_time: string;
-    cta_link: string | null;
-    price: number | null;
-    hero_image: string | null;
-    supporting_images: string[] | null;
-    latitude: number | null;
-    longitude: number | null;
-    host?: {
-        username: string;
-    };
-    tags?: string[];
 };
 
 export default function EventDetailPage() {
@@ -177,7 +156,18 @@ export default function EventDetailPage() {
     }
 
     return (
-        <div className="container mx-auto p-4 space-y-8">
+        <div className="container mx-auto p-4 space-y-8 flex flex-col">
+
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-row gap-2 items-center justify-center h-full">
+                    <Badge variant={event.status === "LIVE" ? "default" : "secondary"}>{event.status}</Badge>
+                    <h1 className="text-2xl font-bold">{event.name}</h1>
+                </div>
+                <Button asChild>
+                    <Link href={`/events/edit?id=${event.id}`}>Edit Event</Link>
+                </Button>
+            </div>
+
             {/* Hero Section */}
             <div className="relative rounded-lg overflow-hidden bg-muted h-[40vh] md:h-[50vh]">
                 {event.hero_image ? (
@@ -442,7 +432,7 @@ export default function EventDetailPage() {
                             </div>
 
                             {/* Tags */}
-                            {event.tags && event.tags.length > 0 && (
+                            {/* {event.tags && event.tags.length > 0 && (
                                 <div className="flex items-start space-x-3">
                                     <div className="h-5 w-5 text-muted-foreground flex items-center justify-center">
                                         #
@@ -461,7 +451,7 @@ export default function EventDetailPage() {
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            )} */}
 
                             {/* CTA Button */}
                             {event.cta_link && (
@@ -475,6 +465,6 @@ export default function EventDetailPage() {
                     </Card>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

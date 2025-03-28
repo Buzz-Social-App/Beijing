@@ -18,38 +18,15 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { FilterIcon, SearchIcon, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { FilterIcon, SearchIcon, Loader2, ChevronLeft, ChevronRight, CheckIcon } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { format } from "date-fns"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { Event } from "@/lib/types"
 
-interface Event {
-    id: string;
-    name: string;
-    host_id: string;
-    created_at: string;
-    location: string | null;
-    city: string;
-    description: string;
-    date: string;
-    start_time: string;
-    cta_link: string | null;
-    price: number | null;
-    latitude: number | null;
-    longitude: number | null;
-    hero_image: string | null;
-    supporting_images: string[] | null;
-    profiles: {
-        username: string;
-    };
-    tags: {
-        tag: {
-            title: string;
-            icon: string;
-        };
-    }[];
-}
+const statusOptions = ["LIVE", "PENDING", "DRAFT"]
 
 // interface FilterState {
 //     status: string | null;
@@ -81,6 +58,10 @@ export default function EventsPage() {
     const [error, setError] = React.useState<string | null>(null)
 
     // State for search and pagination
+    const filters = {
+        status: ['LIVE', 'PENDING', 'DRAFT'],
+    }
+    const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>(filters)
     const [searchQuery, setSearchQuery] = React.useState("")
     const debouncedSearchQuery = useDebounce(searchQuery, 500)
     const [page, setPage] = React.useState(1)
@@ -99,10 +80,12 @@ export default function EventsPage() {
                     .from('events')
                     .select(`
                         *,
-                        profiles(username),
-                        tags:events_tags!event_id(tag:tags(title, icon))
+                        profiles(username)
                     `, { count: 'exact' })
                     .like('name', `%${debouncedSearchQuery}%`)
+                    .in('status', activeFilters.status)
+                // tags:events_tags!event_id(tag:tags(title, icon))
+
 
                 console.log(eventsData)
 
@@ -136,7 +119,38 @@ export default function EventsPage() {
         }
 
         fetchAllData()
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, activeFilters])
+
+    const handleChangeStatus = async (event: Event) => {
+
+        if (event.status === "DRAFT") {
+            return
+        }
+
+        const newStatus = event.status === "LIVE" ? "PENDING" : "LIVE"
+        const { error } = await supabase
+            .from('events')
+            .update({ status: newStatus })
+            .eq('id', event.id)
+
+        if (error) {
+            console.error(error)
+        } else {
+            // Update local state with the new status
+            setEvents(prevEvents =>
+                prevEvents.map(e =>
+                    e.id === event.id ? { ...e, status: newStatus } : e
+                )
+            )
+        }
+    }
+
+    const handleToggleFilter = (filter: keyof typeof filters, values: string[]) => {
+        setActiveFilters(prevFilters => ({
+            ...prevFilters,
+            [filter]: values
+        }));
+    }
 
     // Format date to readable string
     const formatDate = (dateString: string) => {
@@ -165,7 +179,7 @@ export default function EventsPage() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold mb-4">Events</h1>
                 <Button asChild>
-                    <Link href="/events/new">Add New Event</Link>
+                    <Link href="/events/edit">Add New Event</Link>
                 </Button>
             </div>
 
@@ -211,17 +225,25 @@ export default function EventsPage() {
                                     <TableHead>Host</TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Location</TableHead>
-                                    <TableHead>Tags</TableHead>
+                                    <TableHead>Status</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {events.map((event: Event) => (
-                                    <TableRow key={event.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/events/${event.id}`)}>
-                                        <TableCell>{event.name}</TableCell>
+                                    <TableRow key={event.id} className="cursor-pointer hover:bg-muted/50">
+                                        <TableCell
+                                            onClick={() => {
+                                                router.push(`/events/${event.id}`)
+                                            }}
+                                        >{event.name}</TableCell>
                                         <TableCell>{event.profiles?.username || "-"}</TableCell>
                                         <TableCell>{formatDate(event.date)}</TableCell>
-                                        <TableCell>{event.location}</TableCell>
-                                        <TableCell>{event.tags?.map((tag: { tag: { title: string } }) => tag.tag.title).join(", ") || "-"}</TableCell>
+                                        <TableCell>{event.location || event.city}</TableCell>
+                                        <TableCell onClick={() => handleChangeStatus(event)}>
+                                            <Badge className="cursor-pointer w-full" variant={event.status === "LIVE" ? "default" : "secondary"}>
+                                                {event.status}
+                                            </Badge>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -268,26 +290,28 @@ export default function EventsPage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Status filter */}
-                            {/* <div className="space-y-2">
+                            <div className="space-y-2">
                                 <h3 className="text-sm font-medium">Status</h3>
-                                <div className="space-y-1">
+                                <div className="space-x-1 flex flex-row">
+                                    <Button
+                                        variant={activeFilters.status.length === statusOptions.length ? "default" : "ghost"}
+                                        className="w-1/4 justify-center h-8 px-2 font-normal"
+                                        onClick={() => handleToggleFilter("status", activeFilters.status.length === statusOptions.length ? [] : statusOptions)}
+                                    >
+                                        ALL
+                                    </Button>
                                     {statusOptions.map((status) => (
                                         <Button
                                             key={status}
-                                            variant="ghost"
-                                            className="w-full justify-start h-8 px-2 font-normal"
-                                            onClick={() => toggleFilter("status", status)}
+                                            variant={activeFilters.status.includes(status) && activeFilters.status.length !== statusOptions.length ? "default" : "ghost"}
+                                            className="w-1/4 justify-center h-8 px-2 font-normal"
+                                            onClick={() => handleToggleFilter("status", activeFilters.status.length === statusOptions.length ? [status] : [...activeFilters.status, status])}
                                         >
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>{status}</span>
-                                                {activeFilters.status === status && (
-                                                    <CheckIcon className="h-4 w-4" />
-                                                )}
-                                            </div>
+                                            {status}
                                         </Button>
                                     ))}
                                 </div>
-                            </div> */}
+                            </div>
 
                             {/* City filter */}
                             {/* <div className="space-y-2">
