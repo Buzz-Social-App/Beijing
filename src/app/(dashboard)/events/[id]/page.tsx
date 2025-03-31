@@ -238,6 +238,25 @@ export default function EventDetailPage() {
                         </CardContent>
                     </Card>
 
+                    {event.supporting_images && event.supporting_images.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Supporting Images</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-4">
+                                    {event.supporting_images.map((image, index) => (
+                                        // <div key={index} className="w-36 h-36 bg-red-500 relative">
+                                        <Image key={index} src={image} alt={event.name} height={128} width={128} style={{
+                                            objectFit: 'cover'
+                                        }} className="rounded-md h-36 w-36" />
+                                        // </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Map (if location is provided) */}
                     {event.location && (
                         <Card>
@@ -372,28 +391,6 @@ export default function EventDetailPage() {
                             </CardContent>
                         </Card>
                     )}
-
-                    {/* Host Information (can be expanded) */}
-                    {event.host && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Organized by</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center">
-                                    <div className="relative h-12 w-12 rounded-full bg-muted overflow-hidden mr-4">
-                                        <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary text-lg font-semibold">
-                                            {event.host.username.charAt(0)}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold">{event.host.username}</p>
-                                        <p className="text-sm text-muted-foreground">Organizer</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
 
                 {/* Sidebar */}
@@ -463,6 +460,28 @@ export default function EventDetailPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Host Information (can be expanded) */}
+                    {event.host && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Organized by</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center">
+                                    <div className="relative h-12 w-12 rounded-full bg-muted overflow-hidden mr-4">
+                                        <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary text-lg font-semibold">
+                                            {event.host.username.charAt(0)}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">{event.host.username}</p>
+                                        <p className="text-sm text-muted-foreground">Organizer</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div >

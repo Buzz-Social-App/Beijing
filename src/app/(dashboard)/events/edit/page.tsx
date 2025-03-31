@@ -827,7 +827,7 @@ export default function EventFormPage() {
                                                     <img
                                                         src={preview}
                                                         alt={`Supporting preview ${index + 1}`}
-                                                        className="h-32 w-full object-cover rounded-md"
+                                                        className="aspect-square object-cover rounded-md"
                                                     />
                                                     <Button
                                                         type="button"
