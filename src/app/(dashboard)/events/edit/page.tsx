@@ -21,23 +21,22 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressPicker } from "@/components/ui/address-picker";
 import { GoogleMap, Marker } from '@react-google-maps/api';
-import { Tag } from "@/components/ui/tag";
-import { IconName } from "@/components/ui/dynamic-icon";
-import { isGoogleMapsLoaded } from "@/lib/google-maps";
+// import { Tag } from "@/components/ui/tag";
+import { isGoogleMapsLoaded, loadGoogleMapsApi } from "@/lib/google-maps";
 
 // Google Maps container styles
 const mapContainerStyle = {
     width: '100%',
-    height: '200px',
+    height: '100%',
     borderRadius: '0.5rem',
     marginTop: '1rem'
 };
 
 // Define the Tag type based on the schema
-type Tag = {
-    title: string;
-    icon: string;
-};
+// type Tag = {
+//     title: string;
+//     icon: string;
+// };
 
 export default function EventFormPage() {
     const [formData, setFormData] = useState({
@@ -61,11 +60,11 @@ export default function EventFormPage() {
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
     const [supportingImagePreviews, setSupportingImagePreviews] = useState<string[]>([]);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [tags, setTags] = useState<Tag[]>([]);
+    // const [tags, setTags] = useState<Tag[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [isLoadingCities, setIsLoadingCities] = useState(false);
-    const [isLoadingTags, setIsLoadingTags] = useState(false);
+    // const [isLoadingTags, setIsLoadingTags] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [eventId, setEventId] = useState<string | null>(null);
@@ -73,6 +72,11 @@ export default function EventFormPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
+    const [isGuestMode, setIsGuestMode] = useState(user ? false : true);
+    const [guestInfo, setGuestInfo] = useState({
+        name: "",
+        email: "",
+    });
 
     // Check if editing an existing event
     useEffect(() => {
@@ -160,17 +164,17 @@ export default function EventFormPage() {
         }
     };
 
-    // Check if Google Maps API is loaded from the shared loader
+    // Check if Google Maps API is loaded
     useEffect(() => {
         const checkMapsLoaded = () => {
+            console.log("Checking if Google Maps API is loaded");
             if (isGoogleMapsLoaded()) {
                 setIsMapLoaded(true);
             } else {
-                // If not loaded yet, check again after a short delay
                 setTimeout(checkMapsLoaded, 500);
             }
         };
-
+        loadGoogleMapsApi()
         checkMapsLoaded();
     }, []);
 
@@ -212,27 +216,27 @@ export default function EventFormPage() {
         fetchCities();
     }, []);
 
-    // Fetch tags from the database
-    useEffect(() => {
-        const fetchTags = async () => {
-            setIsLoadingTags(true);
-            try {
-                const { data, error } = await supabase
-                    .from('tags')
-                    .select('*');
+    // // Fetch tags from the database
+    // useEffect(() => {
+    //     const fetchTags = async () => {
+    //         setIsLoadingTags(true);
+    //         try {
+    //             const { data, error } = await supabase
+    //                 .from('tags')
+    //                 .select('*');
 
-                if (error) throw error;
+    //             if (error) throw error;
 
-                setTags(data || []);
-            } catch (err) {
-                console.error('Error fetching tags:', err);
-            } finally {
-                setIsLoadingTags(false);
-            }
-        };
+    //             setTags(data || []);
+    //         } catch (err) {
+    //             console.error('Error fetching tags:', err);
+    //         } finally {
+    //             setIsLoadingTags(false);
+    //         }
+    //     };
 
-        fetchTags();
-    }, []);
+    //     fetchTags();
+    // }, []);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,14 +294,15 @@ export default function EventFormPage() {
         }
     };
 
+    // Handle guest info changes
+    const handleGuestInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setGuestInfo((prev) => ({ ...prev, [name]: value }));
+    };
+
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent, status: string) => {
         e.preventDefault();
-
-        if (!user) {
-            setError("You must be logged in to create an event");
-            return;
-        }
 
         if (!selectedDate) {
             setError("Please select a date for the event");
@@ -314,6 +319,12 @@ export default function EventFormPage() {
             return;
         }
 
+        // If guest mode and required fields aren't filled
+        if (!user && isGuestMode && (!guestInfo.name || !guestInfo.email)) {
+            setError("Please enter your name and email to submit as a guest");
+            return;
+        }
+
         setIsSubmitting(true);
         setError("");
 
@@ -322,7 +333,23 @@ export default function EventFormPage() {
             const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
             // Prepare event data
-            const eventData = {
+            interface EventData {
+                name: string;
+                location: string | null;
+                city: string;
+                description: string;
+                date: string;
+                start_time: string;
+                cta_link: string;
+                status: string;
+                price: number | null;
+                latitude: number | null;
+                longitude: number | null;
+                host_id?: string;
+                guest_id?: string;
+            }
+
+            const eventData: EventData = {
                 name: formData.name,
                 location: isHidden ? null : formData.location,
                 city: formData.city,
@@ -336,10 +363,34 @@ export default function EventFormPage() {
                 longitude: coordinates.longitude,
             };
 
+            // If guest user, create guest record first
+            let guestId = null;
+            if (!user && isGuestMode) {
+                const { data: guestData, error: guestError } = await supabase
+                    .from('guests')
+                    .insert({
+                        name: guestInfo.name,
+                        email: guestInfo.email,
+                    })
+                    .select('id')
+                    .single();
+
+                if (guestError) throw new Error(`Error creating guest: ${guestError.message}`);
+                if (!guestData) throw new Error('Failed to create guest record');
+
+                guestId = guestData.id;
+                // Add the guest ID to the event data
+                eventData.guest_id = guestId;
+            } else if (user) {
+                // Set host_id if user is logged in
+                eventData.host_id = user.id;
+            }
+
             let insertedEventId;
 
             if (eventId) {
-                // Update existing event
+                // Update existing event - only allow if user is logged in or it's their guest event
+                // This would need additional checks on the server for security
                 const { error: updateError } = await supabase
                     .from('events')
                     .update(eventData)
@@ -353,7 +404,6 @@ export default function EventFormPage() {
                     .from('events')
                     .insert({
                         ...eventData,
-                        host_id: user.id,
                         created_at: new Date().toISOString(),
                     })
                     .select('id')
@@ -456,17 +506,58 @@ export default function EventFormPage() {
     };
 
     // Handle tag selection
-    const handleTagSelect = (tag: string) => {
-        setSelectedTags((prev) =>
-            prev.includes(tag)
-                ? prev.filter(t => t !== tag)
-                : [...prev, tag]
-        );
-    };
+    // const handleTagSelect = (tag: string) => {
+    //     setSelectedTags((prev) =>
+    //         prev.includes(tag)
+    //             ? prev.filter(t => t !== tag)
+    //             : [...prev, tag]
+    //     );
+    // };
 
     return (
         <div className="container mx-auto p-4 flex flex-col">
-            <h1 className="text-2xl font-bold mb-4">{eventId ? 'Edit Event' : 'Create New Event'}</h1>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-2xl font-bold">{eventId ? 'Edit Event' : 'Create New Event'}</h1>
+                <div className="flex justify-end gap-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => router.back()}
+                    >
+                        Cancel
+                    </Button>
+                    {(user) && <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={isSubmitting}
+                        onClick={(e) => handleSubmit(e as React.FormEvent, "DRAFT")}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            "Save as Draft"
+                        )}
+                    </Button>}
+                    <Button
+                        type="button"
+                        disabled={isSubmitting || (!user && !isGuestMode)}
+                        onClick={(e) => handleSubmit(e as React.FormEvent, "PENDING")}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {eventId ? "Updating..." : "Creating..."}
+                            </>
+                        ) : (
+                            !user && !isGuestMode ? "Enable Guest Mode to Submit" : "Submit Event"
+                        )}
+                    </Button>
+                </div>
+            </div>
+
 
             {isLoading ? (
                 <div className="flex items-center justify-center p-12">
@@ -485,6 +576,66 @@ export default function EventFormPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Guest creator mode when not logged in */}
+                                {!user && (
+                                    <div className="space-y-2 p-4 border border-muted rounded-md bg-muted/10">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="guest-mode"
+                                                checked={isGuestMode}
+                                                onCheckedChange={(checked) => setIsGuestMode(!!checked)}
+                                            />
+                                            <Label htmlFor="guest-mode">Create event as guest</Label>
+                                        </div>
+
+                                        {isGuestMode && (
+                                            <div className="space-y-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="name">Display Name *</Label>
+                                                    <Input
+                                                        id="name"
+                                                        name="name"
+                                                        placeholder="The host name to displayed"
+                                                        value={guestInfo.name}
+                                                        onChange={handleGuestInfoChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="email">Your Email *</Label>
+                                                    <Input
+                                                        id="email"
+                                                        name="email"
+                                                        type="email"
+                                                        placeholder="Your email address"
+                                                        value={guestInfo.email}
+                                                        onChange={handleGuestInfoChange}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div className="mt-4 p-3 bg-primary/10 rounded-md text-sm border border-primary/20">
+                                                    <p className="font-medium text-primary">Want more control over your events?</p>
+                                                    <p className="text-muted-foreground mt-1">
+                                                        Create an account to view event analytics, track reach,
+                                                        and easily edit your events in the future.
+                                                    </p>
+                                                    <div className="mt-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => router.push('/signup')}
+                                                        >
+                                                            Sign up for free
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Event Name *</Label>
                                     <Input
@@ -558,15 +709,15 @@ export default function EventFormPage() {
                         </Card>
 
                         {/* Location */}
-                        <Card>
+                        <Card className="h-full">
                             <CardHeader>
                                 <CardTitle>Location</CardTitle>
                                 <CardDescription>
                                     Enter where your event will take place
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
+                            <CardContent className="space-y-4 h-full flex flex-col">
+                                <div className="flex items-center justify-start">
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="hidden-toggle"
@@ -589,7 +740,7 @@ export default function EventFormPage() {
                                     />
                                 )}
 
-                                <div className="space-y-2">
+                                <div className="space-y-2 flex flex-col">
                                     <Label htmlFor="city">City *</Label>
                                     <Select
                                         value={formData.city}
@@ -606,8 +757,8 @@ export default function EventFormPage() {
                                                     Loading cities...
                                                 </div>
                                             ) : (
-                                                cities.map((city) => (
-                                                    <SelectItem key={city.id} value={city.city}>
+                                                cities.map((city, index) => (
+                                                    <SelectItem key={index} value={city.city}>
                                                         {city.city}
                                                     </SelectItem>
                                                 ))
@@ -618,123 +769,125 @@ export default function EventFormPage() {
 
                                 {/* Add Map Preview */}
                                 {isMapLoaded ? (
-                                    <GoogleMap
-                                        mapContainerStyle={mapContainerStyle}
-                                        center={{
-                                            lat: coordinates.latitude || 0,
-                                            lng: coordinates.longitude || 0
-                                        }}
-                                        zoom={coordinates.latitude && coordinates.longitude && !isHidden ? 15 : 12}
-                                        options={{
-                                            streetViewControl: false,
-                                            mapTypeControl: false,
-                                            fullscreenControl: false,
-                                            zoomControl: true,
-                                            styles: [
-                                                {
-                                                    featureType: 'all',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#242f3e' }]
-                                                },
-                                                {
-                                                    featureType: 'all',
-                                                    elementType: 'labels.text.stroke',
-                                                    stylers: [{ color: '#242f3e' }, { lightness: -80 }]
-                                                },
-                                                {
-                                                    featureType: 'administrative',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#746855' }]
-                                                },
-                                                {
-                                                    featureType: 'administrative.locality',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#d59563' }]
-                                                },
-                                                {
-                                                    featureType: 'poi',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#d59563' }]
-                                                },
-                                                {
-                                                    featureType: 'poi.park',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#263c3f' }]
-                                                },
-                                                {
-                                                    featureType: 'poi.park',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#6b9a76' }]
-                                                },
-                                                {
-                                                    featureType: 'road',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#38414e' }]
-                                                },
-                                                {
-                                                    featureType: 'road',
-                                                    elementType: 'geometry.stroke',
-                                                    stylers: [{ color: '#212a37' }]
-                                                },
-                                                {
-                                                    featureType: 'road',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#9ca5b3' }]
-                                                },
-                                                {
-                                                    featureType: 'road.highway',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#746855' }]
-                                                },
-                                                {
-                                                    featureType: 'road.highway',
-                                                    elementType: 'geometry.stroke',
-                                                    stylers: [{ color: '#1f2835' }]
-                                                },
-                                                {
-                                                    featureType: 'road.highway',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#f3d19c' }]
-                                                },
-                                                {
-                                                    featureType: 'transit',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#2f3948' }]
-                                                },
-                                                {
-                                                    featureType: 'transit.station',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#d59563' }]
-                                                },
-                                                {
-                                                    featureType: 'water',
-                                                    elementType: 'geometry',
-                                                    stylers: [{ color: '#17263c' }]
-                                                },
-                                                {
-                                                    featureType: 'water',
-                                                    elementType: 'labels.text.fill',
-                                                    stylers: [{ color: '#515c6d' }]
-                                                },
-                                                {
-                                                    featureType: 'water',
-                                                    elementType: 'labels.text.stroke',
-                                                    stylers: [{ color: '#17263c' }]
-                                                }
-                                            ]
-                                        }}
-                                    >
-                                        {coordinates.latitude && coordinates.longitude && (
-                                            <Marker
-                                                position={{
-                                                    lat: coordinates.latitude,
-                                                    lng: coordinates.longitude
-                                                }}
-                                            />
-                                        )}
-                                    </GoogleMap>
+                                    <div className="h-full w-full flex">
+                                        <GoogleMap
+                                            mapContainerStyle={mapContainerStyle}
+                                            center={{
+                                                lat: coordinates.latitude || 0,
+                                                lng: coordinates.longitude || 0
+                                            }}
+                                            zoom={coordinates.latitude && coordinates.longitude && !isHidden ? 15 : 12}
+                                            options={{
+                                                streetViewControl: false,
+                                                mapTypeControl: false,
+                                                fullscreenControl: false,
+                                                zoomControl: true,
+                                                styles: [
+                                                    {
+                                                        featureType: 'all',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#242f3e' }]
+                                                    },
+                                                    {
+                                                        featureType: 'all',
+                                                        elementType: 'labels.text.stroke',
+                                                        stylers: [{ color: '#242f3e' }, { lightness: -80 }]
+                                                    },
+                                                    {
+                                                        featureType: 'administrative',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#746855' }]
+                                                    },
+                                                    {
+                                                        featureType: 'administrative.locality',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#d59563' }]
+                                                    },
+                                                    {
+                                                        featureType: 'poi',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#d59563' }]
+                                                    },
+                                                    {
+                                                        featureType: 'poi.park',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#263c3f' }]
+                                                    },
+                                                    {
+                                                        featureType: 'poi.park',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#6b9a76' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#38414e' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road',
+                                                        elementType: 'geometry.stroke',
+                                                        stylers: [{ color: '#212a37' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#9ca5b3' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road.highway',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#746855' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road.highway',
+                                                        elementType: 'geometry.stroke',
+                                                        stylers: [{ color: '#1f2835' }]
+                                                    },
+                                                    {
+                                                        featureType: 'road.highway',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#f3d19c' }]
+                                                    },
+                                                    {
+                                                        featureType: 'transit',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#2f3948' }]
+                                                    },
+                                                    {
+                                                        featureType: 'transit.station',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#d59563' }]
+                                                    },
+                                                    {
+                                                        featureType: 'water',
+                                                        elementType: 'geometry',
+                                                        stylers: [{ color: '#17263c' }]
+                                                    },
+                                                    {
+                                                        featureType: 'water',
+                                                        elementType: 'labels.text.fill',
+                                                        stylers: [{ color: '#515c6d' }]
+                                                    },
+                                                    {
+                                                        featureType: 'water',
+                                                        elementType: 'labels.text.stroke',
+                                                        stylers: [{ color: '#17263c' }]
+                                                    }
+                                                ]
+                                            }}
+                                        >
+                                            {coordinates.latitude && coordinates.longitude && (
+                                                <Marker
+                                                    position={{
+                                                        lat: coordinates.latitude,
+                                                        lng: coordinates.longitude
+                                                    }}
+                                                />
+                                            )}
+                                        </GoogleMap>
+                                    </div>
                                 ) : (
-                                    <div className="flex items-center justify-center h-48 bg-muted rounded-md">
+                                    <div className="flex items-center justify-center h-full bg-muted rounded-md">
                                         <p className="text-muted-foreground">Loading Map...</p>
                                     </div>
                                 )}
@@ -742,14 +895,14 @@ export default function EventFormPage() {
                         </Card>
 
                         {/* Images */}
-                        <Card>
+                        <Card className="col-span-2">
                             <CardHeader>
                                 <CardTitle>Images</CardTitle>
                                 <CardDescription>
                                     Upload a hero image and supporting images for your event
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-6 grid grid-cols-2 gap-x-8">
                                 <div className="space-y-2">
                                     <Label htmlFor="hero-image">Hero Image *</Label>
                                     <div className="border-2 border-dashed rounded-md p-6 text-center">
@@ -847,7 +1000,7 @@ export default function EventFormPage() {
                         </Card>
 
                         {/* Tags */}
-                        <Card>
+                        {/* <Card>
                             <CardHeader>
                                 <CardTitle>Tags</CardTitle>
                                 <CardDescription>
@@ -878,7 +1031,7 @@ export default function EventFormPage() {
                                     </div>
                                 )}
                             </CardContent>
-                        </Card>
+                        </Card> */}
                     </div>
 
                     {
@@ -888,45 +1041,6 @@ export default function EventFormPage() {
                             </div>
                         )
                     }
-
-                    <div className="mt-8 flex justify-end gap-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => router.back()}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={isSubmitting}
-                            onClick={(e) => handleSubmit(e as React.FormEvent, "DRAFT")}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                "Save as Draft"
-                            )}
-                        </Button>
-                        <Button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={(e) => handleSubmit(e as React.FormEvent, "PENDING")}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {eventId ? "Updating..." : "Creating..."}
-                                </>
-                            ) : (
-                                "Submit Event"
-                            )}
-                        </Button>
-                    </div>
                 </form>
             )}
         </div>

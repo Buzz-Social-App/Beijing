@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge"
 import { Event } from "@/lib/types"
 
 const statusOptions = ["LIVE", "PENDING", "DRAFT"]
+const hostOptions = ["ANON", "AUTHED"]
 
 // interface FilterState {
 //     status: string | null;
@@ -60,6 +61,7 @@ export default function EventsPage() {
     // State for search and pagination
     const filters = {
         status: ['LIVE', 'PENDING', 'DRAFT'],
+        host: ['ANON', 'AUTHED']
     }
     const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>(filters)
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -70,20 +72,36 @@ export default function EventsPage() {
 
     const router = useRouter()
 
+    const createHostQuery = (host: string[]) => {
+        const queryParts = []
+        if (host.includes("AUTHED")) {
+            queryParts.push('host_id.not.is.null')
+        }
+        if (host.includes("ANON")) {
+            queryParts.push('host_id.is.null')
+        }
+        return queryParts.join(',')
+    }
+
     // Fetch all events data with relationships
     React.useEffect(() => {
         const fetchAllData = async () => {
             setIsLoading(true)
             try {
                 // Single query to get events with profiles and tags
+                const hostQuery = createHostQuery(activeFilters.host)
                 const { data: eventsData, error: eventsError, count } = await supabase
                     .from('events')
                     .select(`
                         *,
-                        profiles(username)
+                        profiles(username),
+                        guests(name, email)
                     `, { count: 'exact' })
                     .like('name', `%${debouncedSearchQuery}%`)
                     .in('status', activeFilters.status)
+                    .or(hostQuery)
+                // .filter('host_id', activeFilters.host.includes("ANON") && !activeFilters.host.includes("AUTHED") ? 'is.null' : 'not.is.null', null)
+
                 // tags:events_tags!event_id(tag:tags(title, icon))
 
 
@@ -236,7 +254,14 @@ export default function EventsPage() {
                                                 router.push(`/events/${event.id}`)
                                             }}
                                         >{event.name}</TableCell>
-                                        <TableCell>{event.profiles?.username || "-"}</TableCell>
+                                        <TableCell>
+                                            <p className="text-sm font-medium">
+                                                {event.profiles?.username || `ANON`}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {event.guests?.email}
+                                            </p>
+                                        </TableCell>
                                         <TableCell>{formatDate(event.date)}</TableCell>
                                         <TableCell>{event.location || event.city}</TableCell>
                                         <TableCell onClick={() => handleChangeStatus(event)}>
@@ -310,6 +335,28 @@ export default function EventsPage() {
                                             {status}
                                         </Button>
                                     ))}
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium">Host</h3>
+                                    <div className="space-x-1 flex flex-row">
+                                        <Button
+                                            variant={activeFilters.host.length === hostOptions.length ? "default" : "ghost"}
+                                            className="w-1/3 justify-center h-8 px-2 font-normal"
+                                            onClick={() => handleToggleFilter("host", hostOptions)}
+                                        >
+                                            ALL
+                                        </Button>
+                                        {hostOptions.map((status) => (
+                                            <Button
+                                                key={status}
+                                                variant={activeFilters.host.includes(status) && activeFilters.host.length !== hostOptions.length ? "default" : "ghost"}
+                                                className="w-1/3 justify-center h-8 px-2 font-normal"
+                                                onClick={() => handleToggleFilter("host", [status])}
+                                            >
+                                                {status}
+                                            </Button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 

@@ -98,4 +98,4 @@ declare global {
 // Initialize the global property
 if (typeof window !== 'undefined') {
     window.googleMapsLoaded = window.googleMapsLoaded || false;
-} 
+}

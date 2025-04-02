@@ -28,14 +28,14 @@ export function NavMain() {
             icon: CalendarPlus,
         },
         {
-            title: "Tags",
-            url: "/tags",
-            icon: Tag,
-        },
-        {
             title: "Cities",
             url: "/cities",
             icon: Building2,
+        },
+        {
+            title: "Tags [WIP]",
+            url: "/tags",
+            icon: Tag,
         },
 
     ]

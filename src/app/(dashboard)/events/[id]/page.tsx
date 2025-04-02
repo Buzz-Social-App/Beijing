@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Calendar, MapPin } from "lucide-react";
 import { GoogleMap, Marker } from '@react-google-maps/api';
-import { isGoogleMapsLoaded } from "@/lib/google-maps";
+import { isGoogleMapsLoaded, loadGoogleMapsApi } from "@/lib/google-maps";
 import { format, parse } from "date-fns";
 import Image from "next/image";
 import { Event } from "@/lib/types";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth-context";
 // Google Maps container styles
 const mapContainerStyle = {
     width: '100%',
@@ -26,20 +27,20 @@ export default function EventDetailPage() {
     const [event, setEvent] = useState<Event | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
-    const [isMapLoaded, setIsMapLoaded] = useState(false);
-    const [activeImageIndex, setActiveImageIndex] = useState(0);
     const router = useRouter();
-
+    const { user } = useAuth();
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
     // Check if Google Maps API is loaded
     useEffect(() => {
         const checkMapsLoaded = () => {
+            console.log("Checking if Google Maps API is loaded");
             if (isGoogleMapsLoaded()) {
                 setIsMapLoaded(true);
             } else {
                 setTimeout(checkMapsLoaded, 500);
             }
         };
-
+        loadGoogleMapsApi()
         checkMapsLoaded();
     }, []);
 
@@ -55,10 +56,11 @@ export default function EventDetailPage() {
                     .from('events')
                     .select(`
                         *,
-                        host:profiles(username)
+                        host:profiles(username, id)
                     `)
                     .eq('id', eventId)
                     .single();
+
 
                 if (eventError) throw new Error(`Error fetching event: ${eventError.message}`);
                 if (!data) throw new Error('Event not found');
@@ -97,34 +99,18 @@ export default function EventDetailPage() {
         }
     };
 
-    // Navigate to previous image
-    const prevImage = () => {
-        if (!event || !event.supporting_images) return;
+    // // Get current image URL
+    // const getCurrentImageUrl = () => {
+    //     if (!event) return '';
 
-        const totalImages = event.supporting_images.length + 1; // +1 for hero image
-        setActiveImageIndex((activeImageIndex - 1 + totalImages) % totalImages);
-    };
+    //     if (activeImageIndex === 0) {
+    //         return event.hero_image || '';
+    //     } else if (event.supporting_images && event.supporting_images.length > 0) {
+    //         return event.supporting_images[activeImageIndex - 1] || '';
+    //     }
 
-    // Navigate to next image
-    const nextImage = () => {
-        if (!event || !event.supporting_images) return;
-
-        const totalImages = event.supporting_images.length + 1; // +1 for hero image
-        setActiveImageIndex((activeImageIndex + 1) % totalImages);
-    };
-
-    // Get current image URL
-    const getCurrentImageUrl = () => {
-        if (!event) return '';
-
-        if (activeImageIndex === 0) {
-            return event.hero_image || '';
-        } else if (event.supporting_images && event.supporting_images.length > 0) {
-            return event.supporting_images[activeImageIndex - 1] || '';
-        }
-
-        return '';
-    };
+    //     return '';
+    // };
 
     if (isLoading) {
         return (
@@ -163,9 +149,9 @@ export default function EventDetailPage() {
                     <Badge variant={event.status === "LIVE" ? "default" : "secondary"}>{event.status}</Badge>
                     <h1 className="text-2xl font-bold">{event.name}</h1>
                 </div>
-                <Button asChild>
+                {user?.id === event?.host?.id && <Button asChild>
                     <Link href={`/events/edit?id=${event.id}`}>Edit Event</Link>
-                </Button>
+                </Button>}
             </div>
 
             {/* Hero Section */}
@@ -173,43 +159,12 @@ export default function EventDetailPage() {
                 {event.hero_image ? (
                     <div className="relative w-full h-full">
                         <Image
-                            src={getCurrentImageUrl()}
+                            src={event.hero_image}
                             alt={event.name}
                             fill
                             className="object-cover"
                             priority
                         />
-
-                        {/* Image Navigation Controls */}
-                        {event.supporting_images && event.supporting_images.length > 0 && (
-                            <>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                                    onClick={prevImage}
-                                >
-                                    ←
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                                    onClick={nextImage}
-                                >
-                                    →
-                                </Button>
-                                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                                    {[...Array(event.supporting_images.length + 1)].map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={`h-2 w-2 rounded-full ${i === activeImageIndex ? 'bg-primary' : 'bg-muted'}`}
-                                            onClick={() => setActiveImageIndex(i)}
-                                        />
-                                    ))}
-                                </div>
-                            </>
-                        )}
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-full">
@@ -386,6 +341,9 @@ export default function EventDetailPage() {
                                 ) : (
                                     <div className="flex items-center justify-center h-64 bg-muted rounded-md">
                                         <p className="text-muted-foreground">Loading Map...</p>
+                                        <p>{"Latitude: " + event.latitude}</p>
+                                        <p>{"Longitude: " + event.longitude}</p>
+                                        <p>{"Map: " + isMapLoaded}</p>
                                     </div>
                                 )}
                             </CardContent>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "./input";
 import { Label } from "./label";
 import { MapPin } from "lucide-react";
-import { loadGoogleMapsApi, isGoogleMapsLoaded } from "@/lib/google-maps";
+import { isGoogleMapsLoaded } from "@/lib/google-maps";
 
 // Define interface for Google Maps place result
 interface PlaceResult {
@@ -42,33 +42,18 @@ export function AddressPicker({
     const autocompleteRef = useRef<HTMLInputElement>(null);
     const autocompleteInstance = useRef<google.maps.places.Autocomplete | null>(null);
 
-    // Check if API key exists
-    const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    const apiKeyMissing = !googleMapsApiKey || googleMapsApiKey === "";
-
-    // Load the Google Maps API
     useEffect(() => {
-        if (apiKeyMissing) return;
-
-        // If already loaded (from another component), set the loaded state
-        if (isGoogleMapsLoaded()) {
-            console.log('Google Maps already loaded');
-            setPlacesLoaded(true);
-            return;
-        }
-
-        // Load the API
-        console.log('Loading Google Maps API...');
-        loadGoogleMapsApi()
-            .then(() => {
-                console.log('Google Maps API loaded successfully');
+        const checkMapsLoaded = () => {
+            console.log("Checking if Google Maps API is loaded");
+            if (isGoogleMapsLoaded()) {
                 setPlacesLoaded(true);
-            })
-            .catch((error) => {
-                console.error('Error loading Google Maps API:', error);
-                setMapsApiError('Failed to load Google Maps API. Please refresh the page.');
-            });
-    }, [apiKeyMissing]);
+            } else {
+                setTimeout(checkMapsLoaded, 500);
+            }
+        };
+        checkMapsLoaded();
+    }, []);
+
 
     // Initialize Google Places Autocomplete after the API is loaded
     useEffect(() => {
@@ -167,26 +152,14 @@ export function AddressPicker({
                     required={required}
                     ref={autocompleteRef}
                     className="pr-10"
-                    disabled={disabled || apiKeyMissing}
+                    disabled={disabled}
                 />
                 <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             </div>
 
-            {apiKeyMissing && (
-                <p className="text-xs text-destructive mt-1">
-                    Google Maps API key is missing. Please add it to your environment variables.
-                </p>
-            )}
-
             {mapsApiError && (
                 <p className="text-xs text-destructive mt-1">
                     {mapsApiError}
-                </p>
-            )}
-
-            {!placesLoaded && !apiKeyMissing && (
-                <p className="text-xs text-muted-foreground mt-1">
-                    Loading Google Maps...
                 </p>
             )}
 
@@ -203,18 +176,6 @@ export function AddressPicker({
                     Start typing to see suggestions. You can enter venues, landmarks, or addresses.
                 </p>
             ) : null}
-
-            {/* Add a debug indicator during development */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className="hidden">
-                    <p data-testid="address-picker-debug">
-                        API Key: {apiKeyMissing ? 'Missing' : 'Present'} |
-                        Places Loaded: {placesLoaded ? 'Yes' : 'No'} |
-                        Has Error: {mapsApiError ? 'Yes' : 'No'} |
-                        Autocomplete Initialized: {autocompleteInstance.current ? 'Yes' : 'No'}
-                    </p>
-                </div>
-            )}
         </div>
     );
 } 

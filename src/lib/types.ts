@@ -21,6 +21,10 @@ export interface Event {
     profiles: {
         username: string;
     };
+    guests: {
+        name: string;
+        email: string;
+    };
     // tags: {
     //     tag: {
     //         title: string;
