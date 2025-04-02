@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -15,7 +15,6 @@ export default function DashboardLayout({
 }>) {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const searchParams = useSearchParams();
     const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
@@ -30,7 +29,7 @@ export default function DashboardLayout({
         if (!loading && !user && !isEventCreationPage && !isEventPage) {
             router.push("/login");
         }
-    }, [user, loading, router, searchParams, pathname, isEventCreationPage, isEventPage]);
+    }, [user, loading, router, pathname, isEventCreationPage, isEventPage]);
 
     // Don't render anything on the server to prevent hydration errors
     if (!isClient) {
