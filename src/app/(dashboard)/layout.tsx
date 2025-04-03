@@ -19,7 +19,7 @@ export default function DashboardLayout({
     const [isClient, setIsClient] = useState(false);
 
     // Check if current page is the event creation page
-    const isEventCreationPage = pathname === '/events/edit';
+    const isEventCreationPage = pathname === '/events/submission';
     const isEventPage = /^\/events\/[^/]+$/.test(pathname);
 
     useEffect(() => {

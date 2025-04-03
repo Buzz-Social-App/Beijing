@@ -24,7 +24,7 @@ export function NavMain() {
         },
         {
             title: "Create Event",
-            url: "/events/edit",
+            url: "/events/submission",
             icon: CalendarPlus,
         },
         {

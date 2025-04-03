@@ -197,7 +197,7 @@ export default function EventsPage() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold mb-4">Events</h1>
                 <Button asChild>
-                    <Link href="/events/edit">Add New Event</Link>
+                    <Link href="/events/submission">Add New Event</Link>
                 </Button>
             </div>
 

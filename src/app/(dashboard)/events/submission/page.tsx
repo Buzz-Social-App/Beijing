@@ -516,13 +516,14 @@ export default function EventFormPage() {
 
     return (
         <div className="container mx-auto p-4 flex flex-col">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
                 <h1 className="text-2xl font-bold">{eventId ? 'Edit Event' : 'Create New Event'}</h1>
-                <div className="flex justify-end gap-4">
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => router.back()}
+                        className="w-full sm:w-auto"
                     >
                         Cancel
                     </Button>
@@ -531,6 +532,7 @@ export default function EventFormPage() {
                         variant="secondary"
                         disabled={isSubmitting}
                         onClick={(e) => handleSubmit(e as React.FormEvent, "DRAFT")}
+                        className="w-full sm:w-auto"
                     >
                         {isSubmitting ? (
                             <>
@@ -545,6 +547,7 @@ export default function EventFormPage() {
                         type="button"
                         disabled={isSubmitting || (!user && !isGuestMode)}
                         onClick={(e) => handleSubmit(e as React.FormEvent, "PENDING")}
+                        className="w-full sm:w-auto"
                     >
                         {isSubmitting ? (
                             <>
@@ -566,19 +569,19 @@ export default function EventFormPage() {
                 </div>
             ) : (
                 <form onSubmit={(e) => e.preventDefault()}>
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                         {/* Basic Information */}
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="px-4 sm:px-6">
                                 <CardTitle>Event Details</CardTitle>
                                 <CardDescription>
                                     Enter the basic information about your event
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="space-y-4 px-4 sm:px-6">
                                 {/* Guest creator mode when not logged in */}
                                 {!user && (
-                                    <div className="space-y-2 p-4 border border-muted rounded-md bg-muted/10">
+                                    <div className="space-y-2 p-3 sm:p-4 border border-muted rounded-md bg-muted/10">
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id="guest-mode"
@@ -660,7 +663,7 @@ export default function EventFormPage() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="date">Date *</Label>
                                         <DatePicker
@@ -710,14 +713,14 @@ export default function EventFormPage() {
 
                         {/* Location */}
                         <Card className="h-full">
-                            <CardHeader>
+                            <CardHeader className="px-4 sm:px-6">
                                 <CardTitle>Location</CardTitle>
                                 <CardDescription>
                                     Enter where your event will take place
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4 h-full flex flex-col">
-                                <div className="flex items-center justify-start">
+                            <CardContent className="space-y-4 h-full flex flex-col px-4 sm:px-6">
+                                <div className="flex flex-wrap items-center justify-start gap-2">
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="hidden-toggle"
@@ -768,144 +771,250 @@ export default function EventFormPage() {
                                 </div>
 
                                 {/* Add Map Preview */}
-                                {isMapLoaded ? (
-                                    <div className="h-full w-full flex">
-                                        <GoogleMap
-                                            mapContainerStyle={mapContainerStyle}
-                                            center={{
-                                                lat: coordinates.latitude || 0,
-                                                lng: coordinates.longitude || 0
-                                            }}
-                                            zoom={coordinates.latitude && coordinates.longitude && !isHidden ? 15 : 12}
-                                            options={{
-                                                streetViewControl: false,
-                                                mapTypeControl: false,
-                                                fullscreenControl: false,
-                                                zoomControl: true,
-                                                styles: [
-                                                    {
-                                                        featureType: 'all',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#242f3e' }]
-                                                    },
-                                                    {
-                                                        featureType: 'all',
-                                                        elementType: 'labels.text.stroke',
-                                                        stylers: [{ color: '#242f3e' }, { lightness: -80 }]
-                                                    },
-                                                    {
-                                                        featureType: 'administrative',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#746855' }]
-                                                    },
-                                                    {
-                                                        featureType: 'administrative.locality',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#d59563' }]
-                                                    },
-                                                    {
-                                                        featureType: 'poi',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#d59563' }]
-                                                    },
-                                                    {
-                                                        featureType: 'poi.park',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#263c3f' }]
-                                                    },
-                                                    {
-                                                        featureType: 'poi.park',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#6b9a76' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#38414e' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road',
-                                                        elementType: 'geometry.stroke',
-                                                        stylers: [{ color: '#212a37' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#9ca5b3' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road.highway',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#746855' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road.highway',
-                                                        elementType: 'geometry.stroke',
-                                                        stylers: [{ color: '#1f2835' }]
-                                                    },
-                                                    {
-                                                        featureType: 'road.highway',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#f3d19c' }]
-                                                    },
-                                                    {
-                                                        featureType: 'transit',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#2f3948' }]
-                                                    },
-                                                    {
-                                                        featureType: 'transit.station',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#d59563' }]
-                                                    },
-                                                    {
-                                                        featureType: 'water',
-                                                        elementType: 'geometry',
-                                                        stylers: [{ color: '#17263c' }]
-                                                    },
-                                                    {
-                                                        featureType: 'water',
-                                                        elementType: 'labels.text.fill',
-                                                        stylers: [{ color: '#515c6d' }]
-                                                    },
-                                                    {
-                                                        featureType: 'water',
-                                                        elementType: 'labels.text.stroke',
-                                                        stylers: [{ color: '#17263c' }]
-                                                    }
-                                                ]
-                                            }}
-                                        >
-                                            {coordinates.latitude && coordinates.longitude && (
-                                                <Marker
-                                                    position={{
-                                                        lat: coordinates.latitude,
-                                                        lng: coordinates.longitude
-                                                    }}
-                                                />
-                                            )}
-                                        </GoogleMap>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full bg-muted rounded-md">
-                                        <p className="text-muted-foreground">Loading Map...</p>
-                                    </div>
-                                )}
+                                <div className="flex-grow">
+                                    {isMapLoaded ? (
+                                        <div className="h-64 md:h-full min-h-[16rem] w-full flex">
+                                            <GoogleMap
+                                                mapContainerStyle={mapContainerStyle}
+                                                center={{
+                                                    lat: coordinates.latitude || 0,
+                                                    lng: coordinates.longitude || 0
+                                                }}
+                                                zoom={coordinates.latitude && coordinates.longitude && !isHidden ? 15 : 12}
+                                                options={{
+                                                    streetViewControl: false,
+                                                    mapTypeControl: false,
+                                                    fullscreenControl: false,
+                                                    zoomControl: true,
+                                                    styles: [
+                                                        {
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#212121"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "elementType": "labels.icon",
+                                                            "stylers": [
+                                                                {
+                                                                    "visibility": "off"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#757575"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "elementType": "labels.text.stroke",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#212121"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "administrative",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#757575"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "administrative.country",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#9e9e9e"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "administrative.land_parcel",
+                                                            "elementType": "labels",
+                                                            "stylers": [
+                                                                {
+                                                                    "visibility": "off"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "administrative.locality",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#bdbdbd"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "poi",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#757575"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "poi.park",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#181818"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "poi.park",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#616161"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "poi.park",
+                                                            "elementType": "labels.text.stroke",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#1b1b1b"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road",
+                                                            "elementType": "geometry.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#2c2c2c"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#8a8a8a"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road.arterial",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#373737"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road.highway",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#3c3c3c"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road.highway.controlled_access",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#4e4e4e"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road.local",
+                                                            "elementType": "labels",
+                                                            "stylers": [
+                                                                {
+                                                                    "visibility": "off"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "road.local",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#616161"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "transit",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#757575"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "water",
+                                                            "elementType": "geometry",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#000000"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "featureType": "water",
+                                                            "elementType": "labels.text.fill",
+                                                            "stylers": [
+                                                                {
+                                                                    "color": "#3d3d3d"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }}
+                                            >
+                                                {coordinates.latitude && coordinates.longitude && (
+                                                    <Marker
+                                                        position={{
+                                                            lat: coordinates.latitude,
+                                                            lng: coordinates.longitude
+                                                        }}
+                                                    />
+                                                )}
+                                            </GoogleMap>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-64 md:h-full min-h-[16rem] bg-muted rounded-md">
+                                            <p className="text-muted-foreground">Loading Map...</p>
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
 
                         {/* Images */}
-                        <Card className="col-span-2">
-                            <CardHeader>
+                        <Card className="md:col-span-2">
+                            <CardHeader className="px-4 sm:px-6">
                                 <CardTitle>Images</CardTitle>
                                 <CardDescription>
                                     Upload a hero image and supporting images for your event
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6 grid grid-cols-2 gap-x-8">
+                            <CardContent className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4 sm:px-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="hero-image">Hero Image *</Label>
-                                    <div className="border-2 border-dashed rounded-md p-6 text-center">
+                                    <div className="border-2 border-dashed rounded-md p-4 sm:p-6 text-center">
                                         {heroImagePreview ? (
                                             <div className="relative">
                                                 <img
@@ -916,7 +1025,7 @@ export default function EventFormPage() {
                                                 <Button
                                                     type="button"
                                                     variant="destructive"
-                                                    className="mt-2"
+                                                    className="mt-2 w-full sm:w-auto"
                                                     onClick={() => {
                                                         setHeroImage(null);
                                                         setHeroImagePreview(null);
@@ -951,7 +1060,7 @@ export default function EventFormPage() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="supporting-images">Supporting Images</Label>
-                                    <div className="border-2 border-dashed rounded-md p-6 text-center">
+                                    <div className="border-2 border-dashed rounded-md p-4 sm:p-6 text-center">
                                         <label htmlFor="supporting-images" className="cursor-pointer">
                                             <div className="flex flex-col items-center">
                                                 <UploadCloud className="mb-2 h-10 w-10 text-muted-foreground" />
