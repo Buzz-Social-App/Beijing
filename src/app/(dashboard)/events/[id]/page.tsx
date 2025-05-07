@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Calendar, MapPin } from "lucide-react";
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { isGoogleMapsLoaded, loadGoogleMapsApi } from "@/lib/google-maps";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import Image from "next/image";
 import { Event } from "@/lib/types";
 import Link from "next/link";
@@ -76,6 +76,7 @@ export default function EventDetailPage() {
                 // Set the event data with tags
                 setEvent({
                     ...data,
+                    price: data.price ? (data.price / 100) : null,
                     tags: tagData ? tagData.map(t => t.tag) : []
                 });
             } catch (err) {
@@ -88,16 +89,6 @@ export default function EventDetailPage() {
 
         fetchEvent();
     }, [eventId]);
-
-    // Format time from 24h to 12h format with AM/PM
-    const formatTime = (time: string) => {
-        try {
-            const timeObj = parse(time, 'HH:mm', new Date());
-            return format(timeObj, 'h:mm a');
-        } catch {
-            return time; // Return original if parsing fails
-        }
-    };
 
     // // Get current image URL
     // const getCurrentImageUrl = () => {
@@ -472,7 +463,7 @@ export default function EventDetailPage() {
                                         {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
                                     </p>
                                     <p className="text-muted-foreground">
-                                        {formatTime(event.start_time)}
+                                        {format(new Date(event.date + ' ' + event.start_time), 'HH:mm')}
                                     </p>
                                 </div>
                             </div>
@@ -480,12 +471,12 @@ export default function EventDetailPage() {
                             {/* Price */}
                             <div className="flex items-center space-x-3">
                                 <div className="h-5 w-5 text-muted-foreground flex items-center justify-center">
-                                    $
+                                    £
                                 </div>
                                 <div>
                                     <p className="font-medium">Price</p>
                                     <p className="text-muted-foreground">
-                                        {event.price ? `$${event.price.toFixed(2)}` : 'Free'}
+                                        {event.price ? `£${event.price.toFixed(2)}` : 'Free'}
                                     </p>
                                 </div>
                             </div>

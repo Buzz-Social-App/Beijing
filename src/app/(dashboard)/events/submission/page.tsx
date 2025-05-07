@@ -68,6 +68,9 @@ export default function EventFormPage() {
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [eventId, setEventId] = useState<string | null>(null);
+    // Add state for drag-over
+    const [isHeroDragActive, setIsHeroDragActive] = useState(false);
+    const [isSupportingDragActive, setIsSupportingDragActive] = useState(false);
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -114,7 +117,7 @@ export default function EventFormPage() {
                 city: eventData.city || "",
                 description: eventData.description || "",
                 cta_link: eventData.cta_link || "",
-                price: eventData.price ? eventData.price.toString() : "",
+                price: eventData.price ? (eventData.price / 100).toString() : "",
                 time: eventData.start_time || "",
             });
 
@@ -404,6 +407,7 @@ export default function EventFormPage() {
                     .from('events')
                     .insert({
                         ...eventData,
+                        price: eventData.price ? eventData.price * 100 : null,
                         created_at: new Date().toISOString(),
                     })
                     .select('id')
@@ -513,6 +517,50 @@ export default function EventFormPage() {
     //             : [...prev, tag]
     //     );
     // };
+
+    // Drag-and-drop handlers for hero image
+    const handleHeroDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsHeroDragActive(true);
+    };
+    const handleHeroDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsHeroDragActive(false);
+    };
+    const handleHeroDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsHeroDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            // Reuse the existing handler logic
+            const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+            handleHeroImageChange(fakeEvent);
+        }
+    };
+    // Drag-and-drop handlers for supporting images
+    const handleSupportingDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSupportingDragActive(true);
+    };
+    const handleSupportingDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSupportingDragActive(false);
+    };
+    const handleSupportingDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSupportingDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            // Reuse the existing handler logic
+            const fakeEvent = { target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+            handleSupportingImagesChange(fakeEvent);
+        }
+    };
 
     return (
         <div className="container mx-auto p-4 flex flex-col">
@@ -1014,7 +1062,12 @@ export default function EventFormPage() {
                             <CardContent className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4 sm:px-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="hero-image">Hero Image *</Label>
-                                    <div className="border-2 border-dashed rounded-md p-4 sm:p-6 text-center">
+                                    <div
+                                        className={`border-2 border-dashed rounded-md p-4 sm:p-6 text-center transition-colors ${isHeroDragActive ? 'border-primary bg-primary/10' : ''}`}
+                                        onDragOver={handleHeroDragOver}
+                                        onDragLeave={handleHeroDragLeave}
+                                        onDrop={handleHeroDrop}
+                                    >
                                         {heroImagePreview ? (
                                             <div className="relative">
                                                 <img
@@ -1060,7 +1113,12 @@ export default function EventFormPage() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="supporting-images">Supporting Images</Label>
-                                    <div className="border-2 border-dashed rounded-md p-4 sm:p-6 text-center">
+                                    <div
+                                        className={`border-2 border-dashed rounded-md p-4 sm:p-6 text-center transition-colors ${isSupportingDragActive ? 'border-primary bg-primary/10' : ''}`}
+                                        onDragOver={handleSupportingDragOver}
+                                        onDragLeave={handleSupportingDragLeave}
+                                        onDrop={handleSupportingDrop}
+                                    >
                                         <label htmlFor="supporting-images" className="cursor-pointer">
                                             <div className="flex flex-col items-center">
                                                 <UploadCloud className="mb-2 h-10 w-10 text-muted-foreground" />
