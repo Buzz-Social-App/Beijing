@@ -17,6 +17,7 @@ export interface Event {
     longitude: number | null;
     hero_image: string | null;
     supporting_images: string[] | null;
+    is_advert: boolean;
     status: string;
     profiles: {
         username: string;
