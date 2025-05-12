@@ -476,7 +476,7 @@ export default function EventDetailPage() {
                                 <div>
                                     <p className="font-medium">Price</p>
                                     <p className="text-muted-foreground">
-                                        {event.price ? `£${event.price.toFixed(2)}` : 'Free'}
+                                        {event.price ? `£${(event.price).toFixed(2)}` : 'Free'}
                                     </p>
                                 </div>
                             </div>

@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { FilterIcon, SearchIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { FilterIcon, SearchIcon, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
@@ -23,7 +23,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription
+    DialogDescription,
+    DialogFooter
 } from "@/components/ui/dialog"
 
 const statusOptions = ["LIVE", "PENDING", "DRAFT"]
@@ -57,6 +58,7 @@ export default function EventsPage() {
     const [events, setEvents] = React.useState<Event[]>([])
     const [isLoading, setIsLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
+    const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null)
 
     // State for search and pagination
     const filters = {
@@ -201,6 +203,25 @@ export default function EventsPage() {
     // Calculate total pages
     const totalPages = Math.ceil(totalEvents / eventsPerPage)
 
+    const handleDeleteEvent = async () => {
+        if (!eventToDelete) return
+
+        try {
+            const { error } = await supabase
+                .from('events')
+                .delete()
+                .eq('id', eventToDelete.id)
+
+            if (error) throw error
+
+            // Update local state by removing the deleted event
+            setEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id))
+            setEventToDelete(null)
+        } catch (err) {
+            console.error("Error deleting event:", err)
+        }
+    }
+
     if (error) {
         return (
             <div className="container mx-auto p-4 flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
@@ -309,6 +330,7 @@ export default function EventsPage() {
                             <TableHead>Location</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Promoted</TableHead>
+                            <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -338,6 +360,18 @@ export default function EventsPage() {
                                     <Badge className="cursor-pointer w-full" variant={event.is_advert ? "default" : "secondary"}>
                                         {event.is_advert ? "PROMOTED" : "STANDARD"}
                                     </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEventToDelete(event);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -370,7 +404,25 @@ export default function EventsPage() {
                 )}
             </div >
 
-
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
+                <DialogContent className="bg-neutral-950">
+                    <DialogHeader>
+                        <DialogTitle>Delete Event</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete &ldquo;{eventToDelete?.name}&rdquo;? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEventToDelete(null)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteEvent}>
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div >
     )
 }
