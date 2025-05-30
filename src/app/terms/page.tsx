@@ -8,8 +8,8 @@ const TermsPage = () => {
 
       <div className="prose prose-lg">
         <p className="mb-6">
-          Welcome to Buzz Social! These Terms & Conditions ("Terms") govern your access to and use of our mobile application (the "App"), operated by Buzz Social Ltd. ("Buzz Social", "we", "us", or "our"). By creating an account or using the App, you agree to be legally bound by these Terms.
-          If you do not agree to these Terms, do not use the App.
+          {`Welcome to Buzz Social! These Terms & Conditions ("Terms") govern your access to and use of our mobile application (the "App"), operated by Buzz Social Ltd. ("Buzz Social", "we", "us", or "our"). By creating an account or using the App, you agree to be legally bound by these Terms.
+          If you do not agree to these Terms, do not use the App.`}
         </p>
 
         <section className="mb-8">

@@ -8,18 +8,18 @@ const PrivacyPage = () => {
 
       <div className="prose prose-lg">
         <p className="mb-6">
-          Welcome to Buzz Social - your curated guide to the best fashion, music, and art events.
+          {`Welcome to Buzz Social - your curated guide to the best fashion, music, and art events.
           This Privacy Policy explains how we collect, use, and share your personal information when you
           use our mobile app ("Buzz Social", "we", "us", or "our"). We comply with the UK General Data
-          Protection Regulation (UK GDPR), the EU GDPR, and App Store regulations (as of May 2025).
+          Protection Regulation (UK GDPR), the EU GDPR, and App Store regulations (as of May 2025).`}
         </p>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">1. Who Can Use Buzz Social</h2>
           <p className="mb-4">
-            Buzz Social is intended only for users aged 18 and over. By using the app, you confirm that
+            {`Buzz Social is intended only for users aged 18 and over. By using the app, you confirm that
             you meet this requirement. We may use your date of birth to verify your eligibility and
-            personalise your experience.
+            personalise your experience.`}
           </p>
         </section>
 
@@ -74,7 +74,7 @@ const PrivacyPage = () => {
           <ul className="list-disc pl-6 space-y-2">
             <li>Access your personal data.</li>
             <li>Correct inaccurate or incomplete data.</li>
-            <li>Delete your data ("right to be forgotten").</li>
+            <li>{`Delete your data ("right to be forgotten").`}</li>
             <li>Withdraw consent at any time.</li>
             <li>Object to or restrict processing under certain conditions.</li>
             <li>Data portability, allowing you to receive a copy of your data in a usable format.</li>
@@ -103,7 +103,7 @@ const PrivacyPage = () => {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">8. Children's Privacy</h2>
+          <h2 className="text-2xl font-semibold mb-4">{`8. Children's Privacy`}</h2>
           <p>
             Buzz Social is strictly for users 18 years and older. We do not knowingly collect data from
             individuals under 18. If we learn that we have collected data from someone under 18, we will
