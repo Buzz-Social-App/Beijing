@@ -3,7 +3,7 @@ import React from 'react';
 const PrivacyPage = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Privacy Policy - Buzz Social</h1>
+      <h1 className="text-3xl font-bold mb-6">Privacy Policy: Buzz Social</h1>
       <p className="text-sm text-gray-600 mb-8">Effective Date: 30th May 2025</p>
 
       <div className="prose prose-lg">
