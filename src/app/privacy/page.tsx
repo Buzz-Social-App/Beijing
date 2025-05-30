@@ -3,12 +3,12 @@ import React from 'react';
 const PrivacyPage = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Privacy Policy – Buzz Social</h1>
+      <h1 className="text-3xl font-bold mb-6">Privacy Policy - Buzz Social</h1>
       <p className="text-sm text-gray-600 mb-8">Effective Date: 28th May 2025</p>
 
       <div className="prose prose-lg">
         <p className="mb-6">
-          Welcome to Buzz Social – your curated guide to the best fashion, music, and art events.
+          Welcome to Buzz Social - your curated guide to the best fashion, music, and art events.
           This Privacy Policy explains how we collect, use, and share your personal information when you
           use our mobile app ("Buzz Social", "we", "us", or "our"). We comply with the UK General Data
           Protection Regulation (UK GDPR), the EU GDPR, and App Store regulations (as of May 2025).
@@ -121,7 +121,7 @@ const PrivacyPage = () => {
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">10. Contact Us</h2>
-          <p className="mb-2">Buzz Social – Data Protection</p>
+          <p className="mb-2">Buzz Social - Data Protection</p>
           <a href="mailto:team@buzzsocialapp.com" className="text-blue-600 hover:underline">
             team@buzzsocialapp.com
           </a>
