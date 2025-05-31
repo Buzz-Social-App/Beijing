@@ -4,7 +4,7 @@ interface NotificationPayload {
     to: string;
     title: string;
     body: string;
-    data: Record<string, any>;
+    data: Record<string, string>;
 }
 
 export async function POST(request: Request) {
