@@ -68,24 +68,41 @@ const NotificationsPage = () => {
         fetchAllData()
     }, [activeFilters])
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        const bodyData = []
-        for (const profile of profiles) {
-            bodyData.push({
+        setIsLoading(true)
+        setError(null)
+        
+        try {
+            const bodyData = profiles.map(profile => ({
                 to: profile.push_token,
                 title: title,
                 body: body,
                 data: data,
+            }))
+
+            const response = await fetch('/api/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bodyData)
             })
+
+            if (!response.ok) {
+                throw new Error('Failed to send notifications')
+            }
+
+            // Clear the form
+            setTitle('')
+            setBody('')
+            setData({})
+            
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to send notifications')
+        } finally {
+            setIsLoading(false)
         }
-        fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bodyData)
-        })
     }
 
     return (
