@@ -24,7 +24,7 @@ const NotificationsPage = () => {
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [title, setTitle] = useState("")
     const [body, setBody] = useState("")
-    const [data, setData] = useState({})
+    const [data, setData] = useState("{}")
 
     const filters = {
         min_age: 18,
@@ -72,13 +72,14 @@ const NotificationsPage = () => {
         e.preventDefault()
         setIsLoading(true)
         setError(null)
+
         
         try {
             const bodyData = profiles.map(profile => ({
                 to: profile.push_token,
                 title: title,
                 body: body,
-                data: data,
+                data: JSON.parse(data),
             }))
 
             const response = await fetch('/api/notifications', {
@@ -96,7 +97,7 @@ const NotificationsPage = () => {
             // Clear the form
             setTitle('')
             setBody('')
-            setData({})
+            setData("{}")
             
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to send notifications')
@@ -173,8 +174,8 @@ const NotificationsPage = () => {
                     <div>
                         <label className="block text-sm font-medium ">Additional Data (JSON)</label>
                         <textarea
-                            value={JSON.stringify(data)}
-                            onChange={(e) => setData(JSON.parse(e.target.value))}
+                            value={data}
+                            onChange={(e) => setData(e.target.value)}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary font-mono"
                             rows={4}
                             placeholder='{"key": "value"}'
