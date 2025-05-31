@@ -21,7 +21,6 @@ const NotificationsPage = () => {
 
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [totalProfiles, setTotalProfiles] = useState(0)
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [title, setTitle] = useState("")
     const [body, setBody] = useState("")
@@ -31,13 +30,13 @@ const NotificationsPage = () => {
         min_age: 18,
         max_age: 200,
     }
-    const [activeFilters, setActiveFilters] = useState<Record<string, any | any[]>>(filters)
+    const [activeFilters, setActiveFilters] = useState<Record<string, number>>(filters)
 
     useEffect(() => {
         const fetchAllData = async () => {
             setIsLoading(true)
             try {
-                const { data: profilesData, error: profilesError, count } = await supabase
+                const { data: profilesData, error: profilesError } = await supabase
                     .from('profiles')
                     .select(`
                         *
@@ -49,11 +48,6 @@ const NotificationsPage = () => {
                 console.log(profilesData)
 
                 if (profilesError) throw new Error(`Error fetching profiles: ${profilesError.message}`)
-
-                // Set total count for pagination
-                if (count !== null) {
-                    setTotalProfiles(count)
-                }
 
                 if (!profilesData) {
                     setProfiles([])
@@ -67,9 +61,8 @@ const NotificationsPage = () => {
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : "Failed to load events"
                 setError(errorMessage)
-            } finally {
-                setIsLoading(false)
             }
+            setIsLoading(false)
         }
 
         fetchAllData()
@@ -103,7 +96,7 @@ const NotificationsPage = () => {
             {/* Filters Section */}
             <div className="bg-background p-4 rounded-lg shadow">
                 <h2 className="text-lg font-semibold mb-3">Filter Profiles</h2>
-                <p className="font-bold mb-3">{`${profiles.length} profiles found`}</p>
+                {!isLoading && <p className="font-bold mb-3">{`${profiles.length} profiles found`}</p>}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium">Min Age</label>
@@ -170,6 +163,7 @@ const NotificationsPage = () => {
                             placeholder='{"key": "value"}'
                         />
                     </div>
+                    {error && <p className="text-red-500">{error}</p>}
                     <div className="flex justify-end">
                         <Button type="submit" variant="default">
                             Send Notification
