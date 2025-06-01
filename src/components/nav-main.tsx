@@ -38,7 +38,7 @@ export function NavMain() {
             icon: Bell,
         },
         {
-            title: "Tags [WIP]",
+            title: "Tags",
             url: "/tags",
             icon: Tag,
         },

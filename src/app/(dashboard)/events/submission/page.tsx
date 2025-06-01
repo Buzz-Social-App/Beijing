@@ -23,6 +23,7 @@ import { AddressPicker } from "@/components/ui/address-picker";
 import { GoogleMap, Marker } from '@react-google-maps/api';
 // import { Tag } from "@/components/ui/tag";
 import { isGoogleMapsLoaded, loadGoogleMapsApi } from "@/lib/google-maps";
+import { Tag } from "@/components/ui/tag";
 
 // Google Maps container styles
 const mapContainerStyle = {
@@ -59,12 +60,13 @@ export default function EventFormPage() {
     const [supportingImages, setSupportingImages] = useState<File[]>([]);
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
     const [supportingImagePreviews, setSupportingImagePreviews] = useState<string[]>([]);
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     // const [tags, setTags] = useState<Tag[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [isLoadingCities, setIsLoadingCities] = useState(false);
-    // const [isLoadingTags, setIsLoadingTags] = useState(false);
+    const [tags, setTags] = useState<{title: string}[]>([]);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [isLoadingTags, setIsLoadingTags] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [eventId, setEventId] = useState<string | null>(null);
@@ -219,27 +221,27 @@ export default function EventFormPage() {
         fetchCities();
     }, []);
 
-    // // Fetch tags from the database
-    // useEffect(() => {
-    //     const fetchTags = async () => {
-    //         setIsLoadingTags(true);
-    //         try {
-    //             const { data, error } = await supabase
-    //                 .from('tags')
-    //                 .select('*');
+    // Fetch tags from the database
+    useEffect(() => {
+        const fetchTags = async () => {
+            setIsLoadingTags(true);
+            try {
+                const { data, error } = await supabase
+                    .from('tags')
+                    .select('*');
 
-    //             if (error) throw error;
+                if (error) throw error;
 
-    //             setTags(data || []);
-    //         } catch (err) {
-    //             console.error('Error fetching tags:', err);
-    //         } finally {
-    //             setIsLoadingTags(false);
-    //         }
-    //     };
+                setTags(data || []);
+            } catch (err) {
+                console.error('Error fetching tags:', err);
+            } finally {
+                setIsLoadingTags(false);
+            }
+        };
 
-    //     fetchTags();
-    // }, []);
+        fetchTags();
+    }, []);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -510,13 +512,13 @@ export default function EventFormPage() {
     };
 
     // Handle tag selection
-    // const handleTagSelect = (tag: string) => {
-    //     setSelectedTags((prev) =>
-    //         prev.includes(tag)
-    //             ? prev.filter(t => t !== tag)
-    //             : [...prev, tag]
-    //     );
-    // };
+    const handleTagSelect = (tag: string) => {
+        setSelectedTags((prev) =>
+            prev.includes(tag)
+                ? prev.filter(t => t !== tag)
+                : [...prev, tag]
+        );
+    };
 
     // Drag-and-drop handlers for hero image
     const handleHeroDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -1052,7 +1054,7 @@ export default function EventFormPage() {
                         </Card>
 
                         {/* Images */}
-                        <Card className="md:col-span-2">
+                        <Card className="">
                             <CardHeader className="px-4 sm:px-6">
                                 <CardTitle>Images</CardTitle>
                                 <CardDescription>
@@ -1167,7 +1169,7 @@ export default function EventFormPage() {
                         </Card>
 
                         {/* Tags */}
-                        {/* <Card>
+                        <Card>
                             <CardHeader>
                                 <CardTitle>Tags</CardTitle>
                                 <CardDescription>
@@ -1181,15 +1183,15 @@ export default function EventFormPage() {
                                         <span>Loading tags...</span>
                                     </div>
                                 ) : tags.length > 0 ? (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <div className="flex flex-wrap gap-2 justify-start items-start">
                                         {tags.map((tag) => (
-                                            <Tag
+                                            <button
+                                                className={`rounded-full ${selectedTags.includes(tag.title) ? "ring-2 ring-primary" : ""} hover:cursor-pointer`}
                                                 key={tag.title}
-                                                title={tag.title}
-                                                icon={tag.icon as IconName}
                                                 onClick={() => handleTagSelect(tag.title)}
-                                                className={selectedTags.includes(tag.title) ? "ring-2 ring-primary" : ""}
-                                            />
+                                            >
+                                                <Tag tag={tag.title} />
+                                            </button>
                                         ))}
                                     </div>
                                 ) : (
@@ -1198,7 +1200,7 @@ export default function EventFormPage() {
                                     </div>
                                 )}
                             </CardContent>
-                        </Card> */}
+                        </Card>
                     </div>
 
                     {

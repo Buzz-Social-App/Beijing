@@ -72,12 +72,14 @@ export default function EventDetailPage() {
                     .eq('event_id', eventId);
 
                 if (tagError) throw new Error(`Error fetching tags: ${tagError.message}`);
+                console.log("tagData")
+                console.log(tagData)
 
                 // Set the event data with tags
                 setEvent({
                     ...data,
                     price: data.price ? (data.price / 100) : null,
-                    tags: tagData ? tagData.map(t => t.tag) : []
+                    tags: tagData ? tagData.map(t => ({ title: t.tag })) : []
                 });
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : "Failed to load event";
@@ -179,8 +181,13 @@ export default function EventDetailPage() {
                         <CardHeader>
                             <CardTitle>About this event</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4 flex flex-wrap gap-2">
                             <p className="whitespace-pre-line">{event.description}</p>
+                            {event.tags.map((tag) => (
+                                <div key={tag.title} className="px-4 py-2 bg-primary rounded-full text-sm text-black">
+                                    {tag.title}
+                                </div>
+                            ))}
                         </CardContent>
                     </Card>
 

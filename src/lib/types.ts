@@ -26,10 +26,7 @@ export interface Event {
         name: string;
         email: string;
     };
-    // tags: {
-    //     tag: {
-    //         title: string;
-    //         icon: string;
-    //     };
-    // }[];
+    tags: {
+        title: string;
+    }[];
 }
