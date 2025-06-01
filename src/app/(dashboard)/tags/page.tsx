@@ -1,6 +1,4 @@
 import ClientTagPage from "@/components/page/tags";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 
 export default function TagsPage() {
 

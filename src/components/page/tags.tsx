@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardFooter } from "../ui/card";
