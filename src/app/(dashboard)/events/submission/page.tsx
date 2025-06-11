@@ -64,7 +64,7 @@ export default function EventFormPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [isLoadingCities, setIsLoadingCities] = useState(false);
-    const [tags, setTags] = useState<{title: string}[]>([]);
+    const [tags, setTags] = useState<{ title: string }[]>([]);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isLoadingTags, setIsLoadingTags] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -119,7 +119,7 @@ export default function EventFormPage() {
                 city: eventData.city || "",
                 description: eventData.description || "",
                 cta_link: eventData.cta_link || "",
-                price: eventData.price ? (eventData.price / 100).toString() : "",
+                price: eventData.price ? (eventData.price * 100).toString() : "",
                 time: eventData.start_time || "",
             });
 
