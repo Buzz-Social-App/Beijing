@@ -119,7 +119,7 @@ export default function EventFormPage() {
                 city: eventData.city || "",
                 description: eventData.description || "",
                 cta_link: eventData.cta_link || "",
-                price: eventData.price ? (eventData.price * 100).toString() : "",
+                price: eventData.price ? (eventData.price / 100).toString() : "",
                 time: eventData.start_time || "",
             });
 
@@ -398,7 +398,10 @@ export default function EventFormPage() {
                 // This would need additional checks on the server for security
                 const { error: updateError } = await supabase
                     .from('events')
-                    .update(eventData)
+                    .update({
+                        ...eventData,
+                        price: eventData.price ? Number(eventData.price) * 100 : null,
+                    })
                     .eq('id', eventId);
 
                 if (updateError) throw new Error(`Error updating event: ${updateError.message}`);
@@ -409,7 +412,7 @@ export default function EventFormPage() {
                     .from('events')
                     .insert({
                         ...eventData,
-                        price: eventData.price ? eventData.price * 100 : null,
+                        price: eventData.price ? Number(eventData.price) * 100 : null,
                         created_at: new Date().toISOString(),
                     })
                     .select('id')
