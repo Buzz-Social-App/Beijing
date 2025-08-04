@@ -1,0 +1,13 @@
+{
+    "applinks": {
+        "apps": [],
+        "details": [
+            {
+                "appID": "37H4U75X8F.com.buzzsocialapp.buzzsocial",
+                "paths": [
+                    "/events/*"
+                ]
+            }
+        ]
+    }
+}
