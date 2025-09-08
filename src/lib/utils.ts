@@ -61,20 +61,17 @@ export async function uploadToWorker(
   key: string,
   mimeType: string = 'image/jpeg'
 ): Promise<string> {
-  const uploadUrl =
-    (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_URL as string | undefined) ||
-    (process.env.EXPO_PUBLIC_IMAGE_UPLOAD_URL as string | undefined);
-
-  if (!uploadUrl) throw new Error('Image upload URL is not configured');
+  const uploadUrl = process.env.NEXT_PUBLIC_IMAGE_UPLOAD_URL as string | undefined;
+  if (!uploadUrl) throw new Error('Missing NEXT_PUBLIC_IMAGE_UPLOAD_URL');
 
   const formData = new FormData();
   const file = fileOrBlob instanceof File
     ? fileOrBlob
     : new File([fileOrBlob], 'image.jpg', { type: mimeType });
   formData.append('file', file);
-  formData.append('key', key);
+  const url = `${uploadUrl}?key=${encodeURIComponent(key)}`;
 
-  const res = await fetch(uploadUrl, {
+  const res = await fetch(url, {
     method: 'POST',
     body: formData,
   });
