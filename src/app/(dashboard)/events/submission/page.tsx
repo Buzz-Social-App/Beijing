@@ -24,6 +24,7 @@ import { GoogleMap, Marker } from '@react-google-maps/api';
 // import { Tag } from "@/components/ui/tag";
 import { isGoogleMapsLoaded, loadGoogleMapsApi } from "@/lib/google-maps";
 import { Tag } from "@/components/ui/tag";
+import { processAndUploadImage } from "@/lib/utils";
 
 // Google Maps container styles
 const mapContainerStyle = {
@@ -427,38 +428,27 @@ export default function EventFormPage() {
             // Handle hero image upload if a new file was selected
             let heroImageUrl = heroImagePreview;
             if (heroImage) {
-                const filePath = `events/${insertedEventId}/hero-${Date.now()}`;
-                const { error: heroError } = await supabase.storage
-                    .from('event-images')
-                    .upload(filePath, heroImage);
-
-                if (heroError) throw new Error(`Error uploading hero image: ${heroError.message}`);
-
-                // Get public URL
-                const { data: publicUrlData } = supabase.storage
-                    .from('event-images')
-                    .getPublicUrl(filePath);
-
-                heroImageUrl = publicUrlData.publicUrl;
+                const heroKey = `events/${insertedEventId}/hero.jpg`;
+                heroImageUrl = await processAndUploadImage(heroImage, heroKey, {
+                    maxWidth: 2000,
+                    maxHeight: 1200,
+                    quality: 0.82,
+                    mimeType: 'image/jpeg',
+                });
             }
 
             // Handle supporting images upload if new files were selected
             const supportingImageUrls = [...supportingImagePreviews];
             for (let i = 0; i < supportingImages.length; i++) {
                 const file = supportingImages[i];
-                const filePath = `events/${insertedEventId}/supporting-${i}-${Date.now()}`;
-                const { error: supportingError } = await supabase.storage
-                    .from('event-images')
-                    .upload(filePath, file);
-
-                if (supportingError) throw new Error(`Error uploading supporting image: ${supportingError.message}`);
-
-                // Get public URL
-                const { data: publicUrlData } = supabase.storage
-                    .from('event-images')
-                    .getPublicUrl(filePath);
-
-                supportingImageUrls.push(publicUrlData.publicUrl);
+                const suppKey = `events/${insertedEventId}/supporting/${i}.jpg`;
+                const url = await processAndUploadImage(file, suppKey, {
+                    maxWidth: 1600,
+                    maxHeight: 1600,
+                    quality: 0.8,
+                    mimeType: 'image/jpeg',
+                });
+                supportingImageUrls.push(url);
             }
 
             // Update event with image URLs if changed

@@ -9,18 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, UploadCloud } from "lucide-react";
-import { CldUploadWidget } from 'next-cloudinary';
+import { processAndUploadImage } from "@/lib/utils";
 
-// Update the type to match Cloudinary's actual response structure
-type CloudinaryResult = {
-    event: string;
-    info: {
-        secure_url: string;
-        public_id: string;
-        thumbnail_url: string;
-        asset_id: string;
-    };
-};
+//
 
 export default function AdvertFormPage() {
     const [formData, setFormData] = useState({
@@ -32,6 +23,7 @@ export default function AdvertFormPage() {
     const [error, setError] = useState("");
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -237,91 +229,102 @@ export default function AdvertFormPage() {
                         <CardContent>
                             <div className="space-y-2">
                                 <Label>Image *</Label>
-                                <CldUploadWidget
-                                    uploadPreset="adverts"
-                                    options={{
-                                        maxFiles: 1,
-                                        resourceType: "image",
-                                        clientAllowedFormats: ["png", "jpeg", "jpg", "gif"],
-                                        maxFileSize: 10000000, // 10MB
-                                        folder: "adverts",
-                                        sources: ["local", "url", "camera"],
-                                        styles: {
-                                            palette: {
-                                                window: "#000000",
-                                                windowBorder: "#90A0B3",
-                                                tabIcon: "#0078FF",
-                                                menuIcons: "#5A616A",
-                                                textDark: "#000000",
-                                                textLight: "#FFFFFF",
-                                                link: "#0078FF",
-                                                action: "#FF620C",
-                                                inactiveTabIcon: "#0E2F5A",
-                                                error: "#F44235",
-                                                inProgress: "#0078FF",
-                                                complete: "#20B832",
-                                                sourceBg: "#E4EBF1"
-                                            }
-                                        }
+                                <div
+                                    className={`border-2 border-dashed rounded-md p-4 sm:p-6 text-center transition-colors cursor-pointer ${isDragging ? 'border-primary bg-primary/10' : 'border-border hover:border-border'
+                                        }`}
+                                    onDragEnter={() => setIsDragging(true)}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(true);
                                     }}
-                                    onSuccess={(result) => {
-                                        const uploadResult = result as CloudinaryResult;
-                                        console.log(uploadResult);
-                                        if (uploadResult?.event === "success" && uploadResult?.info) {
-                                            setImageUrl(uploadResult.info.secure_url);
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            const file = e.dataTransfer.files[0];
+                                            void (async () => {
+                                                try {
+                                                    setIsUploading(true);
+                                                    const key = `adverts/${crypto.randomUUID()}.jpg`;
+                                                    const url = await processAndUploadImage(file, key, {
+                                                        maxWidth: 1200,
+                                                        maxHeight: 1200,
+                                                        quality: 0.85,
+                                                        mimeType: 'image/jpeg',
+                                                    });
+                                                    setImageUrl(url);
+                                                } catch (err) {
+                                                    const msg = err instanceof Error ? err.message : 'Upload failed';
+                                                    setError(msg);
+                                                } finally {
+                                                    setIsUploading(false);
+                                                }
+                                            })();
                                         }
                                     }}
                                 >
-                                    {({ open }) => (
-                                        <div
-                                            className="space-y-4"
-                                            onDragEnter={() => setIsDragging(true)}
-                                            onDragLeave={() => setIsDragging(false)}
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                setIsDragging(true);
-                                            }}
-                                            onDrop={() => setIsDragging(false)}
-                                        >
-                                            <div
-                                                onClick={() => open()}
-                                                className={`border-2 border-dashed rounded-md p-4 sm:p-6 text-center transition-colors cursor-pointer
-                                                    ${isDragging ? 'border-primary bg-primary/10' : 'border-border hover:border-border'}`}
+                                    {imageUrl ? (
+                                        <div className="relative">
+                                            <img
+                                                src={imageUrl}
+                                                alt="Preview"
+                                                className="mx-auto max-h-64 rounded-md"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                className="mt-2 w-full sm:w-auto"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setImageUrl(null);
+                                                }}
                                             >
-                                                {imageUrl ? (
-                                                    <div className="relative">
-                                                        <img
-                                                            src={imageUrl}
-                                                            alt="Preview"
-                                                            className="mx-auto max-h-64 rounded-md"
-                                                        />
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            className="mt-2 w-full sm:w-auto"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setImageUrl(null);
-                                                            }}
-                                                        >
-                                                            Remove
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center">
-                                                        <UploadCloud className="mb-2 h-10 w-10 text-muted-foreground" />
-                                                        <span className="text-sm font-medium">
-                                                            Click to upload or drag & drop
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground mt-1">
-                                                            PNG, JPG or GIF up to 10MB
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                Remove
+                                            </Button>
                                         </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center w-full cursor-pointer">
+                                            <UploadCloud className="mb-2 h-10 w-10 text-muted-foreground" />
+                                            <span className="text-sm font-medium">
+                                                Click to upload or drag & drop
+                                            </span>
+                                            <span className="text-xs text-muted-foreground mt-1">
+                                                PNG or JPG up to 10MB
+                                            </span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    try {
+                                                        setIsUploading(true);
+                                                        const key = `adverts/${crypto.randomUUID()}.jpg`;
+                                                        const url = await processAndUploadImage(file, key, {
+                                                            maxWidth: 1200,
+                                                            maxHeight: 1200,
+                                                            quality: 0.85,
+                                                            mimeType: 'image/jpeg',
+                                                        });
+                                                        setImageUrl(url);
+                                                    } catch (err) {
+                                                        const msg = err instanceof Error ? err.message : 'Upload failed';
+                                                        setError(msg);
+                                                    } finally {
+                                                        setIsUploading(false);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
                                     )}
-                                </CldUploadWidget>
+                                </div>
+                                {isUploading && (
+                                    <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
