@@ -428,7 +428,9 @@ export default function EventFormPage() {
             // Handle hero image upload if a new file was selected
             let heroImageUrl = heroImagePreview;
             if (heroImage) {
-                const heroKey = `events/${insertedEventId}/hero.jpg`;
+                const year = format(selectedDate, 'yyyy');
+                const month = format(selectedDate, 'MM');
+                const heroKey = `${year}/${month}/${insertedEventId}/hero.jpg`;
                 heroImageUrl = await processAndUploadImage(heroImage, heroKey, {
                     maxWidth: 2000,
                     maxHeight: 1200,
@@ -441,7 +443,9 @@ export default function EventFormPage() {
             const supportingImageUrls = [...supportingImagePreviews];
             for (let i = 0; i < supportingImages.length; i++) {
                 const file = supportingImages[i];
-                const suppKey = `events/${insertedEventId}/supporting/${i}.jpg`;
+                const year = format(selectedDate, 'yyyy');
+                const month = format(selectedDate, 'MM');
+                const suppKey = `${year}/${month}/${insertedEventId}/supporting/${i}.jpg`;
                 const url = await processAndUploadImage(file, suppKey, {
                     maxWidth: 1600,
                     maxHeight: 1600,
