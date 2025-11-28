@@ -467,10 +467,10 @@ export default function EventDetailPage() {
                                 <div>
                                     <p className="font-medium">Date and Time</p>
                                     <p className="text-muted-foreground">
-                                        {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
+                                        {format(new Date(event.date + 'T' + event.start_time), 'EEEE, MMMM d, yyyy')}
                                     </p>
                                     <p className="text-muted-foreground">
-                                        {format(new Date(event.date + ' ' + event.start_time), 'HH:mm')}
+                                        {format(new Date(event.date + 'T' + event.start_time), 'HH:mm')}
                                     </p>
                                 </div>
                             </div>
