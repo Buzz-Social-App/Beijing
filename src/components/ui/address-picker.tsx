@@ -80,7 +80,7 @@ export function AddressPicker({
             const options = {
                 types: ["establishment", "geocode"],
                 fields: ["geometry.location", "formatted_address", "name", "place_id", "types"],
-                componentRestrictions: { country: ["gb", "fr"] }, // Restrict to China for Beijing
+                componentRestrictions: { country: ["gb", "fr", "us"] },
             };
 
             autocompleteInstance.current = new google.maps.places.Autocomplete(
