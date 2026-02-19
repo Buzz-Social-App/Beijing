@@ -7,24 +7,45 @@ interface NotificationPayload {
     data: Record<string, string>;
 }
 
+const EXPO_BATCH_LIMIT = 100;
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+}
+
 export async function POST(request: Request) {
     try {
         const notifications: NotificationPayload[] = await request.json();
 
-        const response = await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(notifications)
-        });
+        const chunks = chunkArray(notifications, EXPO_BATCH_LIMIT);
+        const results = [];
 
-        if (!response.ok) {
-            throw new Error('Failed to send notifications');
+        for (const chunk of chunks) {
+            const response = await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(chunk)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send notifications');
+            }
+
+            const result = await response.json();
+            results.push(result);
         }
 
-        const result = await response.json();
-        return NextResponse.json(result);
+        return NextResponse.json({
+            success: true,
+            batches: results.length,
+            total: notifications.length
+        });
     } catch (error) {
         console.error('Error sending notifications:', error);
         return NextResponse.json(
