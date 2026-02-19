@@ -28,16 +28,21 @@ export async function POST(request: Request) {
             const response = await fetch('https://exp.host/--/api/v2/push/send', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'host': 'exp.host',
+                    'accept': 'application/json',
+                    'accept-encoding': 'gzip, deflate',
+                    'content-type': 'application/json'
                 },
                 body: JSON.stringify(chunk)
             });
 
+            const result = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to send notifications');
+                console.error('Expo API error:', result);
+                throw new Error(`Failed to send notifications: ${JSON.stringify(result)}`);
             }
 
-            const result = await response.json();
             results.push(result);
         }
 
