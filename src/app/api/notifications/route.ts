@@ -20,8 +20,15 @@ function chunkArray<T>(array: T[], size: number): T[][] {
     return chunks;
 }
 
-async function sendBatch(notifications: NotificationPayload[]): Promise<{ success: boolean; sent: number; error?: string }> {
+async function sendBatch(notifications: NotificationPayload[], dryRun: boolean): Promise<{ success: boolean; sent: number; error?: string }> {
     try {
+        if (dryRun) {
+            // Simulate realistic Expo API latency (200-400ms per batch)
+            const delay = 200 + Math.random() * 200;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return { success: true, sent: notifications.length };
+        }
+
         const response = await fetch('https://exp.host/--/api/v2/push/send', {
             method: 'POST',
             headers: {
@@ -48,8 +55,11 @@ async function sendBatch(notifications: NotificationPayload[]): Promise<{ succes
 
 export async function POST(request: Request) {
     try {
+        const url = new URL(request.url);
+        const dryRun = url.searchParams.get('dryRun') === 'true';
+        
         const notifications: NotificationPayload[] = await request.json();
-        console.log(`Sending ${notifications.length} notifications...`);
+        console.log(`${dryRun ? '[DRY RUN] ' : ''}Sending ${notifications.length} notifications...`);
 
         const chunks = chunkArray(notifications, EXPO_BATCH_LIMIT);
         let totalSent = 0;
@@ -58,7 +68,7 @@ export async function POST(request: Request) {
         // Process all chunks with high concurrency
         for (let i = 0; i < chunks.length; i += CONCURRENT_LIMIT) {
             const batch = chunks.slice(i, i + CONCURRENT_LIMIT);
-            const batchResults = await Promise.all(batch.map(chunk => sendBatch(chunk)));
+            const batchResults = await Promise.all(batch.map(chunk => sendBatch(chunk, dryRun)));
             
             for (const result of batchResults) {
                 if (result.success) {
@@ -76,6 +86,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             success: true,
+            dryRun,
             sent: totalSent,
             failed: totalFailed,
             total: notifications.length

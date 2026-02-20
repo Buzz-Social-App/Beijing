@@ -28,6 +28,7 @@ const NotificationsPage = () => {
     const [body, setBody] = useState("")
     const [data, setData] = useState("{}")
     const [progress, setProgress] = useState<string | null>(null)
+    const [dryRun, setDryRun] = useState(true)
 
     const filters = {
         min_age: 18,
@@ -104,9 +105,9 @@ const NotificationsPage = () => {
             let totalFailed = 0
 
             for (let i = 0; i < batches.length; i++) {
-                setProgress(`Sending batch ${i + 1}/${batches.length}...`)
+                setProgress(`${dryRun ? '[TEST] ' : ''}Sending batch ${i + 1}/${batches.length}...`)
                 
-                const response = await fetch('/api/notifications', {
+                const response = await fetch(`/api/notifications${dryRun ? '?dryRun=true' : ''}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -123,7 +124,7 @@ const NotificationsPage = () => {
                 }
             }
 
-            setProgress(`Done! Sent ${totalSent}, Failed ${totalFailed}`)
+            setProgress(`${dryRun ? '[TEST] ' : ''}Done! Sent ${totalSent}, Failed ${totalFailed}`)
             
             // Clear the form
             setTitle('')
@@ -214,9 +215,18 @@ const NotificationsPage = () => {
                     </div>
                     {error && <p className="text-red-500">{error}</p>}
                     {progress && <p className="text-blue-500 font-medium">{progress}</p>}
-                    <div className="flex justify-end">
+                    <div className="flex items-center gap-4 justify-end">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={dryRun}
+                                onChange={(e) => setDryRun(e.target.checked)}
+                                className="w-4 h-4"
+                            />
+                            <span className="text-sm font-medium">Test mode (no notifications sent)</span>
+                        </label>
                         <Button type="submit" variant="default" disabled={isLoading}>
-                            {isLoading ? 'Sending...' : 'Send Notification'}
+                            {isLoading ? 'Sending...' : dryRun ? 'Test Run' : 'Send Notification'}
                         </Button>
                     </div>
                 </form>
