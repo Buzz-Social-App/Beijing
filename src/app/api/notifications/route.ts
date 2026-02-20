@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const maxDuration = 300; // 5 minutes (Vercel Pro/Enterprise) or 60s for Hobby
+export const maxDuration = 60; // Max allowed on Vercel Hobby plan
 
 interface NotificationPayload {
     to: string;
