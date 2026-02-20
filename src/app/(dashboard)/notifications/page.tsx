@@ -44,6 +44,7 @@ const NotificationsPage = () => {
                     .not('push_token', 'is', null)
                     .gte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.max_age)).toISOString())
                     .lte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.min_age)).toISOString())
+                    .limit(100000)
 
                 console.log(profilesData)
 
