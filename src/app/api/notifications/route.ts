@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 300; // 5 minutes (Vercel Pro/Enterprise) or 60s for Hobby
+
 interface NotificationPayload {
     to: string;
     title: string;
@@ -8,6 +10,7 @@ interface NotificationPayload {
 }
 
 const EXPO_BATCH_LIMIT = 100;
+const CONCURRENT_LIMIT = 20; // Expo allows high concurrency
 
 function chunkArray<T>(array: T[], size: number): T[][] {
     const chunks: T[][] = [];
@@ -17,54 +20,64 @@ function chunkArray<T>(array: T[], size: number): T[][] {
     return chunks;
 }
 
-async function sendBatch(notifications: NotificationPayload[]) {
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-            'host': 'exp.host',
-            'accept': 'application/json',
-            'accept-encoding': 'gzip, deflate',
-            'content-type': 'application/json'
-        },
-        body: JSON.stringify(notifications)
-    });
+async function sendBatch(notifications: NotificationPayload[]): Promise<{ success: boolean; sent: number; error?: string }> {
+    try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+                'host': 'exp.host',
+                'accept': 'application/json',
+                'accept-encoding': 'gzip, deflate',
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(notifications)
+        });
 
-    const result = await response.json();
+        const result = await response.json();
 
-    if (!response.ok) {
-        console.error('Expo API error:', result);
-        throw new Error(`Failed to send notifications: ${JSON.stringify(result)}`);
+        if (!response.ok) {
+            console.error('Expo API error:', result);
+            return { success: false, sent: 0, error: JSON.stringify(result) };
+        }
+
+        return { success: true, sent: notifications.length };
+    } catch (err) {
+        return { success: false, sent: 0, error: String(err) };
     }
-
-    return result;
 }
 
 export async function POST(request: Request) {
     try {
         const notifications: NotificationPayload[] = await request.json();
+        console.log(`Sending ${notifications.length} notifications...`);
 
-        // Send each notification individually to avoid PUSH_TOO_MANY_EXPERIENCE_IDS error
-        // This handles tokens from different Expo projects (dev vs prod builds)
         const chunks = chunkArray(notifications, EXPO_BATCH_LIMIT);
-        const results = [];
-        const errors = [];
+        let totalSent = 0;
+        let totalFailed = 0;
 
-        for (const chunk of chunks) {
-            // Send notifications one at a time within each chunk
-            for (const notification of chunk) {
-                try {
-                    const result = await sendBatch([notification]);
-                    results.push(result);
-                } catch (err) {
-                    errors.push({ token: notification.to, error: err });
+        // Process all chunks with high concurrency
+        for (let i = 0; i < chunks.length; i += CONCURRENT_LIMIT) {
+            const batch = chunks.slice(i, i + CONCURRENT_LIMIT);
+            const batchResults = await Promise.all(batch.map(chunk => sendBatch(chunk)));
+            
+            for (const result of batchResults) {
+                if (result.success) {
+                    totalSent += result.sent;
+                } else {
+                    totalFailed += EXPO_BATCH_LIMIT;
+                    console.error('Batch failed:', result.error);
                 }
             }
+            
+            console.log(`Progress: ${Math.min((i + CONCURRENT_LIMIT), chunks.length)}/${chunks.length} batches`);
         }
+
+        console.log(`Done: ${totalSent} sent, ${totalFailed} failed`);
 
         return NextResponse.json({
             success: true,
-            sent: results.length,
-            failed: errors.length,
+            sent: totalSent,
+            failed: totalFailed,
             total: notifications.length
         });
     } catch (error) {

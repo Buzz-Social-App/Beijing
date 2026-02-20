@@ -17,6 +17,8 @@ export interface Profile {
     push_token?: string;
 }
 
+const BATCH_SIZE = 500; // Send 500 notifications per API call to stay under 10s timeout
+
 const NotificationsPage = () => {
 
     const [isLoading, setIsLoading] = useState(false)
@@ -25,6 +27,7 @@ const NotificationsPage = () => {
     const [title, setTitle] = useState("")
     const [body, setBody] = useState("")
     const [data, setData] = useState("{}")
+    const [progress, setProgress] = useState<string | null>(null)
 
     const filters = {
         min_age: 18,
@@ -36,28 +39,36 @@ const NotificationsPage = () => {
         const fetchAllData = async () => {
             setIsLoading(true)
             try {
-                const { data: profilesData, error: profilesError } = await supabase
-                    .from('profiles')
-                    .select(`
-                        *
-                    `, { count: 'exact' })
-                    .not('push_token', 'is', null)
-                    .gte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.max_age)).toISOString())
-                    .lte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.min_age)).toISOString())
-                    .limit(100000)
+                const PAGE_SIZE = 1000
+                let allProfiles: Profile[] = []
+                let page = 0
+                let hasMore = true
 
-                console.log(profilesData)
+                while (hasMore) {
+                    const from = page * PAGE_SIZE
+                    const to = from + PAGE_SIZE - 1
 
-                if (profilesError) throw new Error(`Error fetching profiles: ${profilesError.message}`)
+                    const { data: profilesData, error: profilesError } = await supabase
+                        .from('profiles')
+                        .select(`*`)
+                        .not('push_token', 'is', null)
+                        .gte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.max_age)).toISOString())
+                        .lte('dob', new Date(new Date().setFullYear(new Date().getFullYear() - activeFilters.min_age)).toISOString())
+                        .range(from, to)
 
-                if (!profilesData) {
-                    setProfiles([])
-                    setIsLoading(false)
-                    return
+                    if (profilesError) throw new Error(`Error fetching profiles: ${profilesError.message}`)
+
+                    if (!profilesData || profilesData.length === 0) {
+                        hasMore = false
+                    } else {
+                        allProfiles = [...allProfiles, ...(profilesData as unknown as Profile[])]
+                        hasMore = profilesData.length === PAGE_SIZE
+                        page++
+                    }
                 }
 
-                // Store the raw data
-                setProfiles(profilesData as unknown as Profile[])
+                console.log(`Fetched ${allProfiles.length} profiles`)
+                setProfiles(allProfiles)
 
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : "Failed to load events"
@@ -73,28 +84,47 @@ const NotificationsPage = () => {
         e.preventDefault()
         setIsLoading(true)
         setError(null)
+        setProgress(null)
 
-        
         try {
-            const bodyData = profiles.map(profile => ({
+            const allNotifications = profiles.map(profile => ({
                 to: profile.push_token,
                 title: title,
                 body: body,
                 data: JSON.parse(data),
             }))
 
-            const response = await fetch('/api/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(bodyData)
-            })
-
-            if (!response.ok) {
-                throw new Error('Failed to send notifications')
+            // Split into batches to avoid Vercel timeout
+            const batches = []
+            for (let i = 0; i < allNotifications.length; i += BATCH_SIZE) {
+                batches.push(allNotifications.slice(i, i + BATCH_SIZE))
             }
 
+            let totalSent = 0
+            let totalFailed = 0
+
+            for (let i = 0; i < batches.length; i++) {
+                setProgress(`Sending batch ${i + 1}/${batches.length}...`)
+                
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(batches[i])
+                })
+
+                if (!response.ok) {
+                    totalFailed += batches[i].length
+                    console.error(`Batch ${i + 1} failed`)
+                } else {
+                    const result = await response.json()
+                    totalSent += result.sent || batches[i].length
+                }
+            }
+
+            setProgress(`Done! Sent ${totalSent}, Failed ${totalFailed}`)
+            
             // Clear the form
             setTitle('')
             setBody('')
@@ -183,9 +213,10 @@ const NotificationsPage = () => {
                         />
                     </div>
                     {error && <p className="text-red-500">{error}</p>}
+                    {progress && <p className="text-blue-500 font-medium">{progress}</p>}
                     <div className="flex justify-end">
-                        <Button type="submit" variant="default">
-                            Send Notification
+                        <Button type="submit" variant="default" disabled={isLoading}>
+                            {isLoading ? 'Sending...' : 'Send Notification'}
                         </Button>
                     </div>
                 </form>
