@@ -8,6 +8,8 @@ interface AuthContextType {
     loading: boolean;
     signUp: (email: string, password: string, username: string) => Promise<{ user: User | null; error: AuthError | null }>;
     signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>;
+    verifyOtp: (email: string, token: string) => Promise<{ user: User | null; error: AuthError | null }>;
+    resendOtp: (email: string) => Promise<{ error: AuthError | null }>;
     logOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
     deleteUser: (userId: string) => Promise<{ error: AuthError | null }>;
@@ -49,10 +51,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             options: {
                 data: {
                     username: username
-                }
+                },
+                emailRedirectTo: `${window.location.origin}/auth/callback`
             }
         });
         return { user: data.user, error };
+    };
+
+    const verifyOtp = async (email: string, token: string) => {
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'signup',
+        });
+        return { user: data.user, error };
+    };
+
+    const resendOtp = async (email: string) => {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+        });
+        return { error };
     };
 
     const signIn = async (email: string, password: string) => {
@@ -84,6 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signUp,
         signIn,
+        verifyOtp,
+        resendOtp,
         logOut,
         resetPassword,
         deleteUser,

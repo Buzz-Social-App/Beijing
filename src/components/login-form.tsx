@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail } from "lucide-react";
 import Link from "next/link";
 
 export function LoginForm({
@@ -21,8 +21,12 @@ export function LoginForm({
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+    const [otpCode, setOtpCode] = useState("");
+    const [verifyStep, setVerifyStep] = useState(false);
+    const [verifying, setVerifying] = useState(false);
     const router = useRouter();
-    const { signIn } = useAuth();
+    const { signIn, resendOtp, verifyOtp } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,6 +37,9 @@ export function LoginForm({
             const { error } = await signIn(email, password);
 
             if (error) {
+                if (error.message === "Email not confirmed") {
+                    setEmailNotConfirmed(true);
+                }
                 throw new Error(error.message);
             }
 
@@ -49,10 +56,91 @@ export function LoginForm({
         setShowPassword(!showPassword);
     };
 
+    const handleResendConfirmation = async () => {
+        setError("");
+        setLoading(true);
+        try {
+            const { error: resendError } = await resendOtp(email);
+            if (resendError) {
+                throw new Error(resendError.message);
+            }
+            setVerifyStep(true);
+            setEmailNotConfirmed(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to send confirmation code");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setVerifying(true);
+        try {
+            const { error: otpError } = await verifyOtp(email, otpCode);
+            if (otpError) {
+                throw new Error(otpError.message);
+            }
+            router.push("/");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Verification failed");
+        } finally {
+            setVerifying(false);
+        }
+    };
+
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card className="overflow-hidden py-0">
                 <CardContent className="grid p-0 md:grid-cols-2">
+                    {verifyStep ? (
+                        <form className="p-6 md:p-8" onSubmit={handleVerifyOtp}>
+                            <div className="flex flex-col gap-6 py-16">
+                                <div className="flex flex-col items-center text-center">
+                                    <Mail className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <h1 className="text-2xl font-bold">Verify your email</h1>
+                                    <p className="text-muted-foreground">
+                                        We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+                                    </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="otp">Verification code</Label>
+                                    <Input
+                                        id="otp"
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="Enter 6-digit code"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value)}
+                                        maxLength={6}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                {error && (
+                                    <div className="text-sm text-red-500">
+                                        {error}
+                                    </div>
+                                )}
+                                <Button type="submit" className="w-full" disabled={verifying}>
+                                    {verifying ? "Verifying..." : "Verify"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => {
+                                        setVerifyStep(false);
+                                        setOtpCode("");
+                                        setError("");
+                                    }}
+                                >
+                                    Back to login
+                                </Button>
+                            </div>
+                        </form>
+                    ) : (
                     <form className="p-6 md:p-8" onSubmit={handleSubmit}>
                         <div className="flex flex-col gap-6 py-16">
                             <div className="flex flex-col items-center text-center">
@@ -106,6 +194,16 @@ export function LoginForm({
                             {error && (
                                 <div className="text-sm text-red-500">
                                     {error}
+                                    {emailNotConfirmed && (
+                                        <button
+                                            type="button"
+                                            className="ml-1 underline underline-offset-2 hover:text-red-700"
+                                            onClick={handleResendConfirmation}
+                                            disabled={loading}
+                                        >
+                                            Resend confirmation code
+                                        </button>
+                                    )}
                                 </div>
                             )}
                             <Button type="submit" className="w-full" disabled={loading}>
@@ -119,6 +217,7 @@ export function LoginForm({
                             </div>
                         </div>
                     </form>
+                    )}
                     <div className="relative hidden bg-muted md:block">
                         <Image
                             priority

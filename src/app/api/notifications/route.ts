@@ -10,7 +10,7 @@ interface NotificationPayload {
 }
 
 const EXPO_BATCH_LIMIT = 100;
-const CONCURRENT_LIMIT = 20; // Expo allows high concurrency
+const CONCURRENT_LIMIT = 5; // Stay under 600/sec rate limit (5 batches × 100 = 500/sec)
 
 function chunkArray<T>(array: T[], size: number): T[][] {
     const chunks: T[][] = [];
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         let totalSent = 0;
         let totalFailed = 0;
 
-        // Process all chunks with high concurrency
+        // Process chunks with rate limiting (max 500 notifications per second)
         for (let i = 0; i < chunks.length; i += CONCURRENT_LIMIT) {
             const batch = chunks.slice(i, i + CONCURRENT_LIMIT);
             const batchResults = await Promise.all(batch.map(chunk => sendBatch(chunk, dryRun)));
@@ -80,6 +80,11 @@ export async function POST(request: Request) {
             }
             
             console.log(`Progress: ${Math.min((i + CONCURRENT_LIMIT), chunks.length)}/${chunks.length} batches`);
+            
+            // Small delay between rounds to stay under rate limit
+            if (i + CONCURRENT_LIMIT < chunks.length && !dryRun) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
         }
 
         console.log(`Done: ${totalSent} sent, ${totalFailed} failed`);

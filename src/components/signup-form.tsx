@@ -9,9 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
-// import { supabase } from "@/lib/supabase";
 
 export function SignupForm({
     className,
@@ -25,9 +24,11 @@ export function SignupForm({
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [step, setStep] = useState(1); // Step 1: Email/Password, Step 2: Username
+    const [otpCode, setOtpCode] = useState("");
+    const [verifying, setVerifying] = useState(false);
+    const [step, setStep] = useState(1); // Step 1: Email/Password, Step 2: Username, Step 3: Verify OTP
     const router = useRouter();
-    const { signUp } = useAuth();
+    const { signUp, verifyOtp } = useAuth();
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,8 +59,7 @@ export function SignupForm({
                 throw new Error("Failed to create user account");
             }
 
-            console.log("User profile created successfully");
-            router.push("/");
+            setStep(3);
         } catch (err) {
             const errorMessage = err instanceof Error ? "Username already exists." : "Failed to create an account";
             setError(errorMessage);
@@ -80,7 +80,68 @@ export function SignupForm({
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card className="overflow-hidden py-0">
                 <CardContent className="grid p-0 md:grid-cols-2">
-                    {step === 1 ? (
+                    {step === 3 ? (
+                        <form className="p-6 md:p-8" onSubmit={async (e) => {
+                            e.preventDefault();
+                            setError("");
+                            setVerifying(true);
+                            try {
+                                const { error: otpError } = await verifyOtp(email, otpCode);
+                                if (otpError) {
+                                    throw new Error(otpError.message);
+                                }
+                                router.push("/");
+                            } catch (err) {
+                                setError(err instanceof Error ? err.message : "Verification failed");
+                            } finally {
+                                setVerifying(false);
+                            }
+                        }}>
+                            <div className="flex flex-col gap-6 py-16">
+                                <div className="flex flex-col items-center text-center">
+                                    <Mail className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <h1 className="text-2xl font-bold">Verify your email</h1>
+                                    <p className="text-muted-foreground">
+                                        We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+                                    </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="otp">Verification code</Label>
+                                    <Input
+                                        id="otp"
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="Enter 6-digit code"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value)}
+                                        maxLength={6}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                {error && (
+                                    <div className="text-sm text-red-500">
+                                        {error}
+                                    </div>
+                                )}
+                                <Button type="submit" className="w-full" disabled={verifying}>
+                                    {verifying ? "Verifying..." : "Verify"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => {
+                                        setOtpCode("");
+                                        setError("");
+                                        setStep(2);
+                                    }}
+                                >
+                                    Back
+                                </Button>
+                            </div>
+                        </form>
+                    ) : step === 1 ? (
                         <form className="p-6 md:p-8" onSubmit={handleNextStep}>
                             <div className="flex flex-col gap-6 py-16">
                                 <div className="flex flex-col items-center text-center">
