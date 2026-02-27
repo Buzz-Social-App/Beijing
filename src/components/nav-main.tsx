@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, CalendarPlus, Tag, Building2, Bell, Image, ImagePlus } from "lucide-react"
+import { Calendar, Home, CalendarPlus, Tag, Building2, Bell, Image, ImagePlus, Shield } from "lucide-react"
 import {
     SidebarGroup,
     SidebarMenu,
@@ -9,8 +9,11 @@ import {
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 export function NavMain() {
+    const { isSuperAdmin } = useAuth()
+
     const items = [
         {
             title: "Home",
@@ -52,7 +55,6 @@ export function NavMain() {
             url: "/tags",
             icon: Tag,
         },
-
     ]
 
     const pathname = usePathname()
@@ -69,6 +71,16 @@ export function NavMain() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
+                {isSuperAdmin && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={pathname === "/admin"}>
+                            <Link href="/admin">
+                                <Shield />
+                                <span>Admin</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
             </SidebarMenu>
         </SidebarGroup>
     )

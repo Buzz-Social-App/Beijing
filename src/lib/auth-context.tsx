@@ -1,11 +1,16 @@
 'use client';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { User, AuthError, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+
+export const SUPER_ADMIN_ID = '4d1db31b-9aa5-4e98-9a6d-6cd2f7b5473d';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
+    isAdmin: boolean;
+    adminLoading: boolean;
+    isSuperAdmin: boolean;
     signUp: (email: string, password: string, username: string) => Promise<{ user: User | null; error: AuthError | null }>;
     signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>;
     verifyOtp: (email: string, token: string) => Promise<{ user: User | null; error: AuthError | null }>;
@@ -20,29 +25,69 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [adminLoading, setAdminLoading] = useState(true);
+
+    const checkAdminStatus = useCallback(async (userId: string | undefined) => {
+        if (!userId) {
+            setIsAdmin(false);
+            setAdminLoading(false);
+            return;
+        }
+        try {
+            setAdminLoading(true);
+            const { data, error } = await supabase
+                .from('admins')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Admin check query error:', error);
+                setIsAdmin(false);
+            } else {
+                setIsAdmin(!!data);
+            }
+        } catch (err) {
+            console.error('Admin check failed:', err);
+            setIsAdmin(false);
+        } finally {
+            setAdminLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        // Get initial session
-        const getInitialSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-            setLoading(false);
+        const init = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const currentUser = session?.user ?? null;
+                setUser(currentUser);
+                setLoading(false);
+                await checkAdminStatus(currentUser?.id);
+            } catch (err) {
+                console.error('Session init failed:', err);
+                setLoading(false);
+                setAdminLoading(false);
+            }
         };
 
-        getInitialSession();
+        init();
 
-        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (_event: AuthChangeEvent, session: Session | null) => {
-                setUser(session?.user ?? null);
+                const currentUser = session?.user ?? null;
+                setUser(currentUser);
                 setLoading(false);
+                checkAdminStatus(currentUser?.id);
             }
         );
 
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [checkAdminStatus]);
+
+    const isSuperAdmin = user?.id === SUPER_ADMIN_ID;
 
     const signUp = async (email: string, password: string, username: string) => {
         const { data, error } = await supabase.auth.signUp({
@@ -102,6 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const value = {
         user,
         loading,
+        isAdmin,
+        adminLoading,
+        isSuperAdmin,
         signUp,
         signIn,
         verifyOtp,

@@ -7,38 +7,35 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { UnauthenticatedSidebar } from "@/components/unauthenticated-sidebar";
 import { useAuth } from "@/lib/auth-context";
+import { LogOut, ShieldX } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const { user, loading } = useAuth();
+    const { user, loading, isAdmin, adminLoading, logOut } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
-    // Check if current page is the event creation page
     const isEventCreationPage = pathname === '/events/submission';
     const isEventPage = /^\/events\/[^/]+$/.test(pathname);
 
     useEffect(() => {
         setIsClient(true);
 
-        // Allow access to event creation page for unauthenticated users
         if (!loading && !user && !isEventCreationPage && !isEventPage) {
             router.push("/login");
         }
     }, [user, loading, router, pathname, isEventCreationPage, isEventPage]);
 
-    // Don't render anything on the server to prevent hydration errors
     if (!isClient) {
-        console.log("isClient", isClient);
         return null;
     }
 
-    // Show loading state while checking authentication
-    if (loading) {
+    if (loading || (user && adminLoading)) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
                 <p className="text-lg">Loading...</p>
@@ -46,10 +43,32 @@ export default function DashboardLayout({
         );
     }
 
-    // If not authenticated and not on the events page, don't render the content (will redirect in useEffect)
     if (!user && !isEventCreationPage && !isEventPage) {
-        console.log("not user");
         return null;
+    }
+
+    if (user && !isAdmin && !isEventCreationPage && !isEventPage) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen gap-6">
+                <ShieldX className="h-16 w-16 text-muted-foreground" />
+                <div className="text-center space-y-2">
+                    <h1 className="text-2xl font-bold">Access Denied</h1>
+                    <p className="text-muted-foreground max-w-md">
+                        You are not an admin. Contact an administrator to request access.
+                    </p>
+                </div>
+                <Button
+                    variant="outline"
+                    onClick={async () => {
+                        await logOut();
+                        router.push("/login");
+                    }}
+                >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                </Button>
+            </div>
+        );
     }
 
     return (
