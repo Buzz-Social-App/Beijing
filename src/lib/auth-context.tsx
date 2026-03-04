@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { User, AuthError, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [adminLoading, setAdminLoading] = useState(true);
+    const currentUserIdRef = useRef<string | undefined>(undefined);
 
     const checkAdminStatus = useCallback(async (userId: string | undefined) => {
         if (!userId) {
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const { data: { session } } = await supabase.auth.getSession();
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
+                currentUserIdRef.current = currentUser?.id;
                 setLoading(false);
                 await checkAdminStatus(currentUser?.id);
             } catch (err) {
@@ -78,7 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
                 setLoading(false);
-                checkAdminStatus(currentUser?.id);
+
+                // Skip admin re-check for auth events that don't change the user id
+                // (e.g. token refresh on tab focus), avoiding dashboard remount flashes.
+                if (currentUserIdRef.current !== currentUser?.id) {
+                    currentUserIdRef.current = currentUser?.id;
+                    checkAdminStatus(currentUser?.id);
+                }
             }
         );
 
