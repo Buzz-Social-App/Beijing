@@ -9,12 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-// Define the City type
 type City = {
     city: string;
     live: boolean;
     latitude: number;
     longitude: number;
+    price_symbol: string | null;
 };
 
 // Google Maps container styles
@@ -35,7 +35,8 @@ export default function CitiesPage() {
         city: '',
         live: true,
         latitude: 0,
-        longitude: 0
+        longitude: 0,
+        price_symbol: ''
     });
     const [loading, setLoading] = useState(false);
     const [selectedCity, setSelectedCity] = useState<City | null>(null);
@@ -142,7 +143,8 @@ export default function CitiesPage() {
                     city: newCity.city,
                     live: newCity.live,
                     latitude: newCity.latitude,
-                    longitude: newCity.longitude
+                    longitude: newCity.longitude,
+                    price_symbol: newCity.price_symbol || null
                 }])
                 .select();
 
@@ -153,7 +155,8 @@ export default function CitiesPage() {
                 city: '',
                 live: true,
                 latitude: 0,
-                longitude: 0
+                longitude: 0,
+                price_symbol: ''
             });
             setCoordinatesSet(false);
             router.refresh();
@@ -228,6 +231,16 @@ export default function CitiesPage() {
                             </div>
 
                             <div className="space-y-2">
+                                <Label htmlFor="price-symbol">Price symbol</Label>
+                                <Input
+                                    id="price-symbol"
+                                    value={newCity.price_symbol || ''}
+                                    onChange={(e) => setNewCity({ ...newCity, price_symbol: e.target.value })}
+                                    placeholder="£, $, €, etc."
+                                />
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="coordinates">Coordinates</Label>
                                 <div className="flex items-center space-x-2">
                                     <Input
@@ -293,8 +306,9 @@ export default function CitiesPage() {
                                 <table className="w-full table-fixed">
                                     <thead>
                                         <tr className="border-b">
-                                            <th className="py-2 px-4 text-left font-medium w-1/3">City</th>
-                                            <th className="py-2 px-4 text-left font-medium w-1/2">Coordinates</th>
+                                            <th className="py-2 px-4 text-left font-medium w-1/4">City</th>
+                                            <th className="py-2 px-4 text-left font-medium w-1/4">Price symbol</th>
+                                            <th className="py-2 px-4 text-left font-medium w-1/3">Coordinates</th>
                                             <th className="py-2 px-4 text-left font-medium w-1/6">Status</th>
                                         </tr>
                                     </thead>
@@ -303,6 +317,7 @@ export default function CitiesPage() {
                                             cities.map((city) => (
                                                 <tr key={`city-row-${city.city}`} className="border-b border-muted">
                                                     <td className="py-2 px-4 truncate">{city.city}</td>
+                                                    <td className="py-2 px-4 truncate">{city.price_symbol || '-'}</td>
                                                     <td className="py-2 px-4 truncate">
                                                         {formatCoordinates(city.latitude, city.longitude)}
                                                     </td>

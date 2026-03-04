@@ -30,6 +30,7 @@ export default function EventDetailPage() {
     const router = useRouter();
     const { user } = useAuth();
     const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const [priceSymbol, setPriceSymbol] = useState("£");
     // Check if Google Maps API is loaded
     useEffect(() => {
         const checkMapsLoaded = () => {
@@ -81,6 +82,23 @@ export default function EventDetailPage() {
                     price: data.price ? (data.price / 100) : null,
                     tags: tagData ? tagData.map(t => ({ title: t.tag })) : []
                 });
+
+                // Fetch city price symbol
+                if (data.city) {
+                    const { data: cityData, error: cityError } = await supabase
+                        .from('cities')
+                        .select('price_symbol')
+                        .eq('city', data.city)
+                        .maybeSingle();
+
+                    if (!cityError && cityData && cityData.price_symbol) {
+                        setPriceSymbol(cityData.price_symbol);
+                    } else {
+                        setPriceSymbol("£");
+                    }
+                } else {
+                    setPriceSymbol("£");
+                }
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : "Failed to load event";
                 setError(errorMessage);
@@ -478,12 +496,12 @@ export default function EventDetailPage() {
                             {/* Price */}
                             <div className="flex items-center space-x-3">
                                 <div className="h-5 w-5 text-muted-foreground flex items-center justify-center">
-                                    £
+                                    {priceSymbol}
                                 </div>
                                 <div>
                                     <p className="font-medium">Price</p>
                                     <p className="text-muted-foreground">
-                                        {event.price ? `£${(event.price).toFixed(2)}` : 'Free'}
+                                        {event.price ? `${priceSymbol}${(event.price).toFixed(2)}` : 'Free'}
                                     </p>
                                 </div>
                             </div>

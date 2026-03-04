@@ -55,7 +55,7 @@ export default function EventFormPage() {
         longitude: null
     });
     const [isHidden, setIsHidden] = useState(false);
-    const [cities, setCities] = useState<{ id: string, city: string, live: boolean, latitude: number, longitude: number }[]>([]);
+    const [cities, setCities] = useState<{ id: string, city: string, live: boolean, latitude: number, longitude: number, price_symbol: string | null }[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date>();
     const [heroImage, setHeroImage] = useState<File | null>(null);
     const [supportingImages, setSupportingImages] = useState<File[]>([]);
@@ -734,15 +734,24 @@ export default function EventFormPage() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="price">Price (leave empty if free)</Label>
-                                    <Input
-                                        id="price"
-                                        name="price"
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="0.00"
-                                        value={formData.price}
-                                        onChange={handleInputChange}
-                                    />
+                                    <div className="flex items-center space-x-2">
+                                        <div className="px-3 py-2 border rounded-md bg-muted min-w-[3rem] text-center">
+                                            {(() => {
+                                                const city = cities.find(c => c.city === formData.city);
+                                                return city?.price_symbol || "£";
+                                            })()}
+                                        </div>
+                                        <Input
+                                            id="price"
+                                            name="price"
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={formData.price}
+                                            onChange={handleInputChange}
+                                            className="flex-1"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
